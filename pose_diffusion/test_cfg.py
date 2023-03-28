@@ -10,22 +10,7 @@ import numpy as np
 import torch
 from typing import Dict, List, Optional, Union
 from omegaconf import OmegaConf
-# from config import cfg, cfg_from_list, cfg_from_yaml_file, log_config_to_file
 
-
-def parse_config():
-    parser = argparse.ArgumentParser(description="arg parser")
-    parser.add_argument(
-        "--cfg_file", type=str, default=None, help="specify the config for training"
-    )
-
-    args = parser.parse_args()
-    
-    cfg = OmegaConf.load(args.cfg_file)
-    cfg.TAG = Path(args.cfg_file).stem
-    cfg.EXP_GROUP_PATH = "/".join(args.cfg_file.split("/")[1:-1])
-    np.random.seed(1024)
-    return args, cfg
 
 
 # pseudo code for build_transformer
@@ -79,7 +64,12 @@ class DummyModel:
 
 
 def main():
-    args, cfg = parse_config()
+    cli_args = OmegaConf.from_cli()
+    cfg_file = cli_args.get("cfg_file")
+    yaml_cfg = OmegaConf.load(cfg_file)
+
+    cfg = OmegaConf.merge(yaml_cfg, cli_args)
+
     model = DummyModel(**cfg.MODEL)
     optimizer = DummyOptimizer(**cfg.OPTIMIZER)
 
