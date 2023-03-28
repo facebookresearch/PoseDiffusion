@@ -9,8 +9,8 @@ from pathlib import Path
 import numpy as np
 import torch
 from typing import Dict, List, Optional, Union
-
-from config import cfg, cfg_from_list, cfg_from_yaml_file, log_config_to_file
+from omegaconf import OmegaConf
+# from config import cfg, cfg_from_list, cfg_from_yaml_file, log_config_to_file
 
 
 def parse_config():
@@ -20,8 +20,8 @@ def parse_config():
     )
 
     args = parser.parse_args()
-
-    cfg_from_yaml_file(args.cfg_file, cfg)
+    
+    cfg = OmegaConf.load(args.cfg_file)
     cfg.TAG = Path(args.cfg_file).stem
     cfg.EXP_GROUP_PATH = "/".join(args.cfg_file.split("/")[1:-1])
     np.random.seed(1024)
@@ -30,25 +30,26 @@ def parse_config():
 
 # pseudo code for build_transformer
 # please imagine this is in a python file called build_transformer.py
-__all__ = {
-    "SimpleTransformer": transformer,
-    "AAA": AAATransformer,
-    "BBB": BBBTransformer,
-}
+# __all__ = {
+#     "SimpleTransformer": Transformer,
+#     "AAA": AAATransformer,
+#     "BBB": BBBTransformer,
+# }
 
 
-def build_transformer(name, num_encoders, num_decoders, **kwargs):
-    # num_encoders, num_decoders are common args
-    # for all the transformer variants
-    # kwargs: passing the customized args of different variants
+# def build_transformer(name, num_encoders, num_decoders, **kwargs):
+#     # num_encoders, num_decoders are common args
+#     # for all the transformer variants
+#     # kwargs: passing the customized args of different variants
 
-    model = __all__[name](
-        num_encoders=num_encoders, num_decoders=num_decoders, **kwargs
-    )
-    return model
+#     model = __all__[name](
+#         num_encoders=num_encoders, num_decoders=num_decoders, **kwargs
+#     )
+    
+#     return model
 
 
-class dummy_model:
+class DummyModel:
     def __init__(
         self,
         name: str,
@@ -70,14 +71,17 @@ class dummy_model:
 
         # but to be honest, in this way, 
         # we are somehow back close to implicitron...
+        
+        
+        # import pdb;pdb.set_trace()
         self.transformer = build_transformer(**transformer)
         self.backbone = build_backbone(**backbone)
 
 
 def main():
     args, cfg = parse_config()
-    model = dummy_model(**cfg.MODEL)
-    optimizer = dummy_optimizer(**cfg.OPTIMIZER)
+    model = DummyModel(**cfg.MODEL)
+    optimizer = DummyOptimizer(**cfg.OPTIMIZER)
 
 
 if __name__ == "__main__":
