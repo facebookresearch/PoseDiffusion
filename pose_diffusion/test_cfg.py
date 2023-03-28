@@ -64,11 +64,11 @@ class DummyModel:
 
 
 def main():
-    cli_args = OmegaConf.from_cli()
-    cfg_file = cli_args.get("cfg_file")
+    cli_cfg = OmegaConf.from_cli()
+    cfg_file = cli_cfg.get("cfg_file")
     yaml_cfg = OmegaConf.load(cfg_file)
 
-    cfg = OmegaConf.merge(yaml_cfg, cli_args)
+    cfg = OmegaConf.merge(yaml_cfg, cli_cfg)
 
     model = DummyModel(**cfg.MODEL)
     optimizer = DummyOptimizer(**cfg.OPTIMIZER)
