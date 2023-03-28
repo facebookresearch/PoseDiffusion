@@ -4,6 +4,7 @@ tmp/
 .vscode/
 *.egg-info/
 **/__pycache__/
+**/outputs/
 *-checkpoint.ipynb
 **/.ipynb_checkpoints
 **/.ipynb_checkpoints/**

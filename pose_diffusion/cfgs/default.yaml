@@ -1,23 +1,20 @@
-# DATASET:
-#     name: Co3D
-
-# OPTIMIZER:
-#     name: adam_onecycle
-#     num_epochs: 30
-
 MODEL:
-    # _BASE_CONFIG_: cfgs/path_to_default.yaml
+    _target_: models.DummyModel
 
-    _target_: DummyModel
+    name: debug
 
-    backbone:
-        name: DINOVITS16
+    backbone: 
+        name: debug
     
-    transformer:
-        name: SimpleTransformer
+    transformer: 
+        name: debug
 
-        num_encoders: 2
-        num_decoders: 6
 
-        mlps: 
-            mlp_layer: [[512, 256], [256, 128]]
+
+    #     _target_: SimpleTransformer
+
+    #     num_encoders: 2
+    #     num_decoders: 6
+
+    #     mlps: 
+    #         mlp_layer: [[512, 256], [256, 128]]
