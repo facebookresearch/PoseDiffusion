@@ -1,0 +1,13 @@
+build/
+dist/
+tmp/
+.vscode/
+*.egg-info/
+**/__pycache__/
+*-checkpoint.ipynb
+**/.ipynb_checkpoints
+**/.ipynb_checkpoints/**
+test_visualizations/**
+visualisations/**
+**/data/**
+*.log
