@@ -1,14 +1,14 @@
-DATASET:
-    name: Co3D
+# DATASET:
+#     name: Co3D
 
-OPTIMIZER:
-    name: adam_onecycle
-    num_epochs: 30
+# OPTIMIZER:
+#     name: adam_onecycle
+#     num_epochs: 30
 
 MODEL:
     # _BASE_CONFIG_: cfgs/path_to_default.yaml
 
-    name: PoseDiff
+    _target_: DummyModel
 
     backbone:
         name: DINOVITS16
