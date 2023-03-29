@@ -1,12 +1,12 @@
-MODEL:
-    _target_: models.DummyModel
+Model:
+    _target_: models.PoseDiffusionModel
 
-    name: debug
 
-    backbone: 
-        name: debug
-    
-    transformer: 
+    Img_model: 
+        _target_: models.ImageGlobalPredictor
+        multiscale: True
+
+    Denoiser: 
         name: debug
 
 

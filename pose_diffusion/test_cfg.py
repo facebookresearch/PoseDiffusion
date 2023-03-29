@@ -15,12 +15,14 @@ from hydra.utils import instantiate
 
 import models
 
+
 @hydra.main(config_path="cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
-    model = instantiate(cfg.MODEL)
+    print(cfg.Model)
+    model = instantiate(cfg.Model, _recursive_=False)
     print("done")
-    
+
 
 if __name__ == "__main__":
     main()

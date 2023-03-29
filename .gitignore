@@ -1,6 +1,7 @@
 build/
 dist/
 tmp/
+**/tmp/
 .vscode/
 *.egg-info/
 **/__pycache__/

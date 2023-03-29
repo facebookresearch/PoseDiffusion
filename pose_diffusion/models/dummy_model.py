@@ -10,10 +10,8 @@ class DummyModel:
         transformer: Dict,
     ):
         self.name = name
-        
+
         print(f"build a dummy model called {self.get_name()}")
-        
+
     def get_name(self) -> str:
         return self.name
-
-

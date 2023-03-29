@@ -6,7 +6,7 @@
 
 ## TODO
 
-- [ ] Config System
+:white_check_mark: Config System
 - [ ] Model Architecture
 - [ ] Model Weights
 - [ ] Training pipeline
