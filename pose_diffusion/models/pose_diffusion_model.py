@@ -37,13 +37,14 @@ from pytorch3d.transforms.rotation_conversions import (
 
 
 import models
+from utils.configurable import configurable
 
 from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
 
 
-@configurable
+@dataclass
 class PoseDiffusionModel(nn.Module):
     Img_model: Dict
     Denoiser: Dict
@@ -54,6 +55,7 @@ class PoseDiffusionModel(nn.Module):
     def __post_init__(self):
         super().__init__()
         self.img_model = instantiate(self.Img_model)
+        # import pdb;pdb.set_trace()
 
     def forward(self):
         return None
