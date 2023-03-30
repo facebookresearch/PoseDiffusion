@@ -23,57 +23,59 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class Denoiser(nn.Module):
-    pivot_cam: bool = True
-    append_t: bool = True
-    target_dim: int = 9  # TODO: fl dim from 2 to 1
-    z_dim: int = 384
-    mlp_hidden_dim: bool = 128
-    time_multiplier: float = 0.1
-
-    # transformer args
-    nhead: int = 4
-    d_model: int = 512
-    dim_feedforward: int = 1024
-    num_decoder_layers: int = 2
-    num_encoder_layers: int = 2
-    dropout: float = 0.1  # TODO: necessary?
-    norm_first: bool = True
-
-    # projection
-    proj_xt_first: bool = True
-    proj_dim: int = 96
-
-    def __post_init__(self):
+    def __init__(
+        self,
+        pivot_cam: bool = True,
+        append_t: bool = True,
+        target_dim: int = 9,  # TODO: fl dim from 2 to 1
+        z_dim: int = 384,
+        mlp_hidden_dim: bool = 128,
+        time_multiplier: float = 0.1,
+        nhead: int = 4,
+        d_model: int = 512,
+        dim_feedforward: int = 1024,
+        num_decoder_layers: int = 2,
+        num_encoder_layers: int = 2,
+        dropout: float = 0.1,  # TODO: necessary?
+        norm_first: bool = True,
+        proj_xt_first: bool = True,
+        proj_dim: int = 96,
+    ):
         super().__init__()
-        self.proj_xt = torch.nn.Linear(self.target_dim + 1, self.proj_dim)
+
+        self.pivot_cam = pivot_cam
+        self.append_t = append_t
+        self.target_dim = target_dim
+        self.time_multiplier = time_multiplier
+        self.proj_xt_first = proj_xt_first
+
+        self.proj_xt = torch.nn.Linear(self.target_dim + 1, proj_dim)
         first_dim = (
             self.target_dim
-            + self.z_dim
-            + self.proj_dim
+            + z_dim
+            + proj_dim
             + int(self.pivot_cam)
             + int(self.append_t)
         )
 
         # TODO: rename _first, _trunk, and _last
-        self._first = nn.Linear(first_dim, self.d_model)
+        self._first = nn.Linear(first_dim, d_model)
         self._trunk = nn.Transformer(
-            d_model=self.d_model,
-            nhead=self.nhead,
-            num_encoder_layers=self.num_encoder_layers,
-            num_decoder_layers=self.num_decoder_layers,
-            dim_feedforward=self.dim_feedforward,
-            dropout=self.dropout,
+            d_model=d_model,
+            nhead=nhead,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
             batch_first=True,
-            norm_first=self.norm_first,
+            norm_first=norm_first,
         )
 
-        # TODO: remove hard para 128
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
-            self.d_model,
-            [self.mlp_hidden_dim, self.target_dim],
+            d_model,
+            [mlp_hidden_dim, self.target_dim],
             norm_layer=nn.LayerNorm,
         )
 

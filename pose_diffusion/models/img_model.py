@@ -28,20 +28,24 @@ _RESNET_STD = [0.229, 0.224, 0.225]
 
 @dataclass
 class ImageGlobalPredictor(nn.Module):
-    name: str = "dino_vits16"
-    multiscale: bool = True
-    freeze: bool = False
-    scale_factors: list = field(default_factory=lambda: [1, 1 / 2, 1 / 3])
-
-    def __post_init__(self):
+    def __init__(
+        self,
+        modelname: str = "dino_vits16",
+        multiscale: bool = True,
+        freeze: bool = False,
+        scale_factors: list = [1, 1 / 2, 1 / 3],
+    ):
         super().__init__()
+        self.multiscale = multiscale
+        self.freeze = freeze
+        self.scale_factors = scale_factors
 
-        if "res" in self.name:
-            self._net = getattr(torchvision.models, self.name)(pretrained=True)
+        if "res" in modelname:
+            self._net = getattr(torchvision.models, modelname)(pretrained=True)
             self._output_dim = self._net.fc.weight.shape[1]
             self._net.fc = nn.Identity()
-        elif "dino" in self.name:
-            self._net = torch.hub.load("facebookresearch/dino:main", self.name)
+        elif "dino" in modelname:
+            self._net = torch.hub.load("facebookresearch/dino:main", modelname)
             self._output_dim = self._net.norm.weight.shape[0]
         else:
             raise NotImplementedError

@@ -1,25 +1,20 @@
-Model:
+MODEL:
     _target_: models.PoseDiffusionModel
 
 
-    Img_model: 
+    IMG_MODEL: 
         _target_: models.ImageGlobalPredictor
         multiscale: True
+        freeze: False
 
-    Denoiser: 
+    DENOISER: 
         _target_: models.Denoiser
 
-        # Transformer
+    GAU_DIFFUSER:
+        _target_: models.GaussianDiffusion
+        beta_schedule: custom
         
-        num_decoder_layers: 2
-        num_encoder_layers: 2
-        nhead: 4
 
 
-    #     _target_: SimpleTransformer
 
-    #     num_encoders: 2
-    #     num_decoders: 6
 
-    #     mlps: 
-    #         mlp_layer: [[512, 256], [256, 128]]

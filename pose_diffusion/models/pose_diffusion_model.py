@@ -42,21 +42,23 @@ from hydra.utils import instantiate
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class PoseDiffusionModel(nn.Module):
-    Img_model: Dict
-    Denoiser: Dict
-
-    # Img_model: Dict = field(default_factory=dict)
-    # Denoiser: Dict = field(default_factory=dict)
-
-    def __post_init__(self):
+    def __init__(
+        self,
+        IMG_MODEL: Dict,
+        GAU_DIFFUSER: Dict,
+        DENOISER: Dict,
+    ):
         super().__init__()
-        self.img_model = instantiate(self.Img_model)
-        self.denoiser = instantiate(self.Denoiser)
+
+        self.img_model = instantiate(IMG_MODEL)
+        self.gau_diffuser = instantiate(GAU_DIFFUSER)
+        self.denoiser = instantiate(DENOISER)
+
+        print("done")
         
-        print('done')
-        # import pdb;pdb.set_trace()
-        
+        import pdb
+        pdb.set_trace()
+
     def forward(self):
         return None

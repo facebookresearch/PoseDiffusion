@@ -23,7 +23,8 @@ def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     print("*"*20)
     
-    model = instantiate(cfg.Model, _recursive_=False)
+    # MODEL
+    model = instantiate(cfg.MODEL, _recursive_=False)
     print("done")
 
 
