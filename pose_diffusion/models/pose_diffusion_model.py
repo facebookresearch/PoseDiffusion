@@ -42,7 +42,6 @@ from hydra.utils import instantiate
 logger = logging.getLogger(__name__)
 
 
-
 class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
@@ -57,10 +56,10 @@ class PoseDiffusionModel(nn.Module):
 
         self.img_model = instantiate(IMG_MODEL)
         self.gau_diffuser = instantiate(GAU_DIFFUSER)
-        
+
         denoiser = instantiate(DENOISER)
         self.gau_diffuser.model = denoiser
-        
+
     def forward(
         self,
         image: torch.Tensor,
@@ -68,15 +67,14 @@ class PoseDiffusionModel(nn.Module):
         sequence_name: Optional[List[str]] = None,
         matches_dict=None,
     ) -> Dict[str, Any]:
-        
         z = self.img_model(image)
         # TODO: unsqueeze to be consistent with our original implementation
         # remove this in the future
         z = z.unsqueeze(0)
-        
-        B , N, _ = z.shape
+
+        B, N, _ = z.shape
         target_shape = [B, N, self.target_dim]
 
-        pose, pose_process = self.gau_diffuser.sample(shape = target_shape, z = z)
+        pose, pose_process = self.gau_diffuser.sample(shape=target_shape, z=z)
 
         return pose

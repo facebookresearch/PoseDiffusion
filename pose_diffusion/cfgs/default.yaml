@@ -15,6 +15,7 @@ MODEL:
         beta_schedule: custom
         
 
-
-
+TEST:
+    image_path: test_case/apple_110_13051_23361_num10
+    image_size: 224
 

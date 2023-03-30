@@ -292,7 +292,6 @@ class GaussianDiffusion(nn.Module):
         # Init here
         pose = torch.randn(shape, device=device)
 
-
         x_start = None
 
         pose_process = []
@@ -353,8 +352,6 @@ class GaussianDiffusion(nn.Module):
         b = len(pose)
         t = torch.randint(0, self.num_timesteps, (b,), device=pose.device).long()
         return self.p_losses(pose, t, z=z, *args, **kwargs)
-
-
 
     @property
     def loss_fn(self):
