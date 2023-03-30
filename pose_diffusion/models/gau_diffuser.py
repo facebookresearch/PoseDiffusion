@@ -292,6 +292,7 @@ class GaussianDiffusion(nn.Module):
         # Init here
         pose = torch.randn(shape, device=device)
 
+
         x_start = None
 
         pose_process = []
@@ -309,6 +310,7 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def sample(self, shape, z):
+        # TODO: add more variants
         sample_fn = self.p_sample_loop
         return sample_fn(shape, z=z)
 

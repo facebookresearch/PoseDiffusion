@@ -23,7 +23,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
 from pytorch3d.ops import corresponding_cameras_alignment
-import pytorch3d.renderer.cameras as cameras
+from pytorch3d.renderer.cameras import CamerasBase
 from pytorch3d.transforms import (
     se3_exp_map,
     se3_log_map,
@@ -42,23 +42,41 @@ from hydra.utils import instantiate
 logger = logging.getLogger(__name__)
 
 
+
 class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
         IMG_MODEL: Dict,
         GAU_DIFFUSER: Dict,
         DENOISER: Dict,
+        target_dim: int = 9,  # TODO: fl dim from 2 to 1
     ):
         super().__init__()
+        self.target_dim = target_dim
+        DENOISER.target_dim = target_dim
 
         self.img_model = instantiate(IMG_MODEL)
         self.gau_diffuser = instantiate(GAU_DIFFUSER)
-        self.denoiser = instantiate(DENOISER)
-
-        print("done")
         
-        import pdb
-        pdb.set_trace()
+        denoiser = instantiate(DENOISER)
+        self.gau_diffuser.model = denoiser
+        
+    def forward(
+        self,
+        image: torch.Tensor,
+        camera: Optional[CamerasBase] = None,
+        sequence_name: Optional[List[str]] = None,
+        matches_dict=None,
+    ) -> Dict[str, Any]:
+        
+        z = self.img_model(image)
+        # TODO: unsqueeze to be consistent with our original implementation
+        # remove this in the future
+        z = z.unsqueeze(0)
+        
+        B , N, _ = z.shape
+        target_shape = [B, N, self.target_dim]
 
-    def forward(self):
-        return None
+        pose, pose_process = self.gau_diffuser.sample(shape = target_shape, z = z)
+
+        return pose

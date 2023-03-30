@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 class Denoiser(nn.Module):
     def __init__(
         self,
+        target_dim,  # TODO: fl dim from 2 to 1
         pivot_cam: bool = True,
         append_t: bool = True,
-        target_dim: int = 9,  # TODO: fl dim from 2 to 1
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
         time_multiplier: float = 0.1,
@@ -89,6 +89,13 @@ class Denoiser(nn.Module):
 
         # expand t from B to B x N_x x 1
         t_expand = (t * self.time_multiplier).view(B, 1, 1).expand(-1, N, -1)
+
+        if self.pivot_cam:
+            # add the one hot vector identifying the first camera as pivot
+            # NOTE we treat the first camera as pivot during training
+            cam_pivot_id = torch.zeros_like(z[..., :1])
+            cam_pivot_id[:, 0, ...] = 1.0
+            z = torch.cat([z, cam_pivot_id], dim=-1)
 
         if self.proj_xt_first:
             xt = self.proj_xt(torch.cat([x, t_expand], dim=-1))

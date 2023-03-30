@@ -7,8 +7,9 @@
 ## TODO
 
 - [x] Config System
-- [ ] Model Architecture
+- [x] Model Architecture
 - [ ] Model Weights
+- [ ] Verification
 - [ ] Training pipeline
 - [ ] Re-training
 - [ ] Match extraction and GGS

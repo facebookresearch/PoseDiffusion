@@ -25,6 +25,16 @@ def main(cfg: DictConfig) -> None:
     
     # MODEL
     model = instantiate(cfg.MODEL, _recursive_=False)
+    
+    # Evaluation
+    model.eval()
+    
+    # randomly generated image, range from 0 to 1
+    input_image = torch.rand(10, 3, 224, 224) 
+    
+    # forward 
+    with torch.no_grad():
+        pred_pose = model(image=input_image)
     print("done")
 
 

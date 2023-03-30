@@ -26,7 +26,6 @@ _RESNET_MEAN = [0.485, 0.456, 0.406]
 _RESNET_STD = [0.229, 0.224, 0.225]
 
 
-@dataclass
 class ImageGlobalPredictor(nn.Module):
     def __init__(
         self,
