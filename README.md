@@ -11,9 +11,10 @@
 - [ ] Model Weights
 - [ ] Verification
 - [ ] PyTorch 2.0
-- [ ] Training pipeline
+- [ ] Training Pipeline
 - [ ] Re-training
-- [ ] Match extraction and GGS
+- [ ] Match Extraction  
+- [ ] Geometry Guided Sampling
 
 
 
