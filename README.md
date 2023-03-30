@@ -12,7 +12,7 @@
 - [ ] Verification
 - [ ] PyTorch 2.0
 - [ ] Training Pipeline
-- [ ] Re-training
+- [ ] Retraining
 - [ ] Match Extraction  
 - [ ] Geometry Guided Sampling
 
