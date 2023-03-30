@@ -55,11 +55,8 @@ class PoseDiffusionModel(nn.Module):
         self.img_model = instantiate(self.Img_model)
         self.denoiser = instantiate(self.Denoiser)
         
-        
-        # self.diffuser = 
         print('done')
         # import pdb;pdb.set_trace()
-        
         
     def forward(self):
         return None
