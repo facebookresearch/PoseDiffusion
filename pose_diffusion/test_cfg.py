@@ -18,8 +18,11 @@ import models
 
 @hydra.main(config_path="cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
+    print("*"*20)
+    print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
-    print(cfg.Model)
+    print("*"*20)
+    
     model = instantiate(cfg.Model, _recursive_=False)
     print("done")
 

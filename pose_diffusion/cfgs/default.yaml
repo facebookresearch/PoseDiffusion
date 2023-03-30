@@ -7,8 +7,13 @@ Model:
         multiscale: True
 
     Denoiser: 
-        name: debug
+        _target_: models.Denoiser
 
+        # Transformer
+        
+        num_decoder_layers: 2
+        num_encoder_layers: 2
+        nhead: 4
 
 
     #     _target_: SimpleTransformer
