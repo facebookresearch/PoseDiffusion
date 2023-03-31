@@ -16,6 +16,6 @@ MODEL:
         
 
 TEST:
-    image_path: samples/apple_110_13051_23361_num10
+    image_path: samples/apple
     image_size: 224
 

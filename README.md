@@ -3,7 +3,7 @@
 Example usage:
 
 ```.bash
-python test.py TEST.image_path="samples/teddybear_159_17485_33236_num10"
+python test.py TEST.image_path="samples/teddybear"
 ```
 
 ## TODO
