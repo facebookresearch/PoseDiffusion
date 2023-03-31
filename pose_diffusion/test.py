@@ -19,21 +19,28 @@ import models
 def main(cfg: DictConfig) -> None:
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
+    
+    # Check for GPU availability and set the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Model Construction
     model = instantiate(cfg.MODEL, _recursive_=False)
-
-    # Evaluation Mode
-    model.eval()
 
     # Loading Image
     original_cwd = get_original_cwd()  # hydra changes the default path, goes back
     folder_path = os.path.join(original_cwd, cfg.TEST.image_folder)
     images = load_and_preprocess_images(folder_path, cfg.TEST.image_size)
-    
+
     # Or randomly generated image, ranging from 0 to 1
     # images = torch.rand(10, 3, 224, 224)
 
+    # Move to the GPU
+    model = model.to(device)
+    images = images.to(device)
+
+    # Evaluation Mode
+    model.eval()
+    
     # Forward
     with torch.no_grad():
         pred_pose = model(image=images)

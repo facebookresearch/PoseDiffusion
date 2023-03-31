@@ -68,6 +68,7 @@ class PoseDiffusionModel(nn.Module):
         matches_dict=None,
     ) -> Dict[str, Any]:
         z = self.img_feature_extractor(image)
+        
         # TODO: unsqueeze to be consistent with our original implementation
         # remove this in the future
         z = z.unsqueeze(0)

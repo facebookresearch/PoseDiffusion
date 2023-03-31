@@ -68,7 +68,7 @@ class ImageGlobalPredictor(nn.Module):
 
     def forward(self, image_rgb: Optional[torch.Tensor]) -> torch.Tensor:
         img_normed = self._resnet_normalize_image(image_rgb)
-
+        
         if self.multiscale:
             features = self._compute_multiscale_features(img_normed)
         else:

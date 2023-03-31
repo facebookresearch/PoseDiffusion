@@ -38,17 +38,25 @@ def load_and_preprocess_images(
         image = center_crop_square(image)
 
         image_height, image_width = image_size, image_size
-        minscale = min(
-            image_height / image.shape[-2],
-            image_width / image.shape[-1],
-        )
+
         imre = F.interpolate(
             torch.from_numpy(image)[None],
-            scale_factor=minscale,
+            size=(image_height, image_width),
             mode=mode,
             align_corners=False if mode == "bilinear" else None,
-            recompute_scale_factor=True,
         )[0]
+            
+        # minscale = min(
+        #     image_height / image.shape[-2],
+        #     image_width / image.shape[-1],
+        # )
+        # imre = F.interpolate(
+        #     torch.from_numpy(image)[None],
+        #     scale_factor=minscale,
+        #     mode=mode,
+        #     align_corners=False if mode == "bilinear" else None,
+        #     recompute_scale_factor=True,
+        # )[0]
 
         images.append(imre.numpy())
 
