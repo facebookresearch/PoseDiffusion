@@ -15,6 +15,8 @@ python test.py TEST.image_folder="samples/teddybear"
 - [ ] PyTorch 2.0
 - [ ] Training Pipeline
 - [ ] Retraining
+- [ ] Large-scale training
+- [ ] General cross dataset testing
 - [ ] Match Extraction  
 - [ ] Geometry Guided Sampling
 
