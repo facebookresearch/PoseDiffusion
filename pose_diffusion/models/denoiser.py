@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class Denoiser(nn.Module):
     def __init__(
         self,
-        target_dim,  # TODO: fl dim from 2 to 1
+        target_dim: int = 9,  # TODO: fl dim from 2 to 1
         pivot_cam: bool = True,
         append_t: bool = True,
         z_dim: int = 384,

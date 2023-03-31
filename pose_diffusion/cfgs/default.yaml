@@ -2,7 +2,7 @@ MODEL:
     _target_: models.PoseDiffusionModel
 
 
-    IMG_MODEL: 
+    Img_Feature_Extractor: 
         _target_: models.ImageGlobalPredictor
         multiscale: True
         freeze: False
@@ -10,7 +10,7 @@ MODEL:
     DENOISER: 
         _target_: models.Denoiser
 
-    GAU_DIFFUSER:
+    DIFFUSER:
         _target_: models.GaussianDiffusion
         beta_schedule: custom
         
