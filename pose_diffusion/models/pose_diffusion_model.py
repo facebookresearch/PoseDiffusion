@@ -30,11 +30,7 @@ from pytorch3d.transforms import (
     Transform3d,
     so3_relative_angle,
 )
-from pytorch3d.transforms.rotation_conversions import (
-    matrix_to_quaternion,
-    quaternion_to_matrix,
-)
-
+from util.rt_transform import optform_to_rt
 
 import models
 from hydra.utils import instantiate
@@ -45,11 +41,16 @@ logger = logging.getLogger(__name__)
 class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
+        optform,
         Img_Feature_Extractor: Dict,
         DIFFUSER: Dict,
         DENOISER: Dict,
     ):
         super().__init__()
+        # optform defines the SE(3) matrix representation (i.e., [R t]) for optimization purposes.
+        # e.g., "absT_quaR_logFL" implies the usage of absolute translation, quaternion rotation,
+        # and logarithm of the focal length for the representation.
+        self.optform = optform
 
         self.img_feature_extractor = instantiate(Img_Feature_Extractor)
         self.diffuser = instantiate(DIFFUSER)
@@ -77,4 +78,6 @@ class PoseDiffusionModel(nn.Module):
 
         pose, pose_process = self.diffuser.sample(shape=target_shape, z=z)
 
+        pose = optform_to_rt(pose, optform_type=self.optform)
+        
         return pose

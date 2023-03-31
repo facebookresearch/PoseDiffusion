@@ -1,6 +1,7 @@
 MODEL:
     _target_: models.PoseDiffusionModel
 
+    optform: absT_quaR_logFL
 
     Img_Feature_Extractor: 
         _target_: models.ImageGlobalExtractor
@@ -13,6 +14,7 @@ MODEL:
     DIFFUSER:
         _target_: models.GaussianDiffusion
         beta_schedule: custom
+
         
 
 TEST:
