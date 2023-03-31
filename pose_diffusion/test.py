@@ -34,6 +34,18 @@ def main(cfg: DictConfig) -> None:
     # Or randomly generated image, ranging from 0 to 1
     # images = torch.rand(10, 3, 224, 224)
 
+
+    # Load the pre-set checkpoint
+    ckpt_path = os.path.join(original_cwd, cfg.TEST.ckpt)
+    if os.path.isfile(ckpt_path):
+        checkpoint = torch.load(ckpt_path, map_location=device)
+        model.load_state_dict(checkpoint,strict=False)
+        print(f"Loaded checkpoint from: {ckpt_path}")
+    else:
+        raise ValueError(f"No checkpoint found at: {ckpt_path}")
+        return
+
+
     # Move to the GPU
     model = model.to(device)
     images = images.to(device)

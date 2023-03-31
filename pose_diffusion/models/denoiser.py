@@ -35,8 +35,8 @@ class Denoiser(nn.Module):
         nhead: int = 4,
         d_model: int = 512,
         dim_feedforward: int = 1024,
-        num_decoder_layers: int = 2,
         num_encoder_layers: int = 2,
+        num_decoder_layers: int = 6,
         dropout: float = 0.1,  # TODO: necessary?
         norm_first: bool = True,
         proj_xt_first: bool = True,
@@ -102,7 +102,7 @@ class Denoiser(nn.Module):
             feed_feats = torch.cat([x, t_expand, xt, z], dim=-1)
         else:
             # TODO: add the variants here
-            raise NotImplementedError()
+            raise NotImplementedError(f"Variants to be implemented")
 
         input_ = self._first(feed_feats)
 

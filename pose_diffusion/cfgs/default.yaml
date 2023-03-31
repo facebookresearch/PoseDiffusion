@@ -3,7 +3,7 @@ MODEL:
 
 
     Img_Feature_Extractor: 
-        _target_: models.ImageGlobalPredictor
+        _target_: models.ImageGlobalExtractor
         multiscale: True
         freeze: False
 
@@ -18,4 +18,5 @@ MODEL:
 TEST:
     image_folder: samples/apple
     image_size: 224
+    ckpt: tmp/co3d_model0.pth
 

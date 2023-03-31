@@ -26,7 +26,7 @@ _RESNET_MEAN = [0.485, 0.456, 0.406]
 _RESNET_STD = [0.229, 0.224, 0.225]
 
 
-class ImageGlobalPredictor(nn.Module):
+class ImageGlobalExtractor(nn.Module):
     def __init__(
         self,
         modelname: str = "dino_vits16",
@@ -47,7 +47,7 @@ class ImageGlobalPredictor(nn.Module):
             self._net = torch.hub.load("facebookresearch/dino:main", modelname)
             self._output_dim = self._net.norm.weight.shape[0]
         else:
-            raise NotImplementedError
+            raise ValueError(f"unknown model name {modelname}")
 
         for name, value in (
             ("_resnet_mean", _RESNET_MEAN),
