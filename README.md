@@ -3,7 +3,7 @@
 Example usage:
 
 ```.bash
-python test.py TEST.image_path="samples/teddybear"
+python test.py TEST.image_folder="samples/teddybear"
 ```
 
 ## TODO
