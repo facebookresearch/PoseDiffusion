@@ -23,6 +23,13 @@ python test.py TEST.image_folder="samples/teddybear"
 
 
 
+## Wait a Second
+- [ ] Non Rigid
+- [ ] Unsupervised
+- [ ] Large Model
+
+
+
 
 
 
