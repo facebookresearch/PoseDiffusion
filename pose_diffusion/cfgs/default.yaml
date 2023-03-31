@@ -16,6 +16,6 @@ MODEL:
         
 
 TEST:
-    image_path: samples/apple
+    image_folder: samples/apple
     image_size: 224
 
