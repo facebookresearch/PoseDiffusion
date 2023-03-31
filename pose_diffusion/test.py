@@ -15,7 +15,7 @@ from util.load_img_folder import load_and_preprocess_images
 import models
 
 
-@hydra.main(config_path="cfgs/", config_name="default")
+@hydra.main(config_path="../cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
