@@ -45,7 +45,7 @@ def load_and_preprocess_images(
             mode=mode,
             align_corners=False if mode == "bilinear" else None,
         )[0]
-            
+
         # minscale = min(
         #     image_height / image.shape[-2],
         #     image_width / image.shape[-1],

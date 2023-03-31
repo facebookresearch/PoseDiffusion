@@ -19,7 +19,7 @@ import models
 def main(cfg: DictConfig) -> None:
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
-    
+
     # Check for GPU availability and set the device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -40,7 +40,7 @@ def main(cfg: DictConfig) -> None:
 
     # Evaluation Mode
     model.eval()
-    
+
     # Forward
     with torch.no_grad():
         pred_pose = model(image=images)
