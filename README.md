@@ -7,7 +7,7 @@ The ckpt is available in [dropbox](https://www.dropbox.com/s/unsgup5yu2pmusk/co3
 Example usage:
 
 ```.bash
-python test.py TEST.image_folder="samples/apple" TEST.ckpt="co3d_model0.pth"
+python test.py image_folder="samples/apple" ckpt="co3d_model0.pth"
 ```
 
 By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence is around 0.8 second.

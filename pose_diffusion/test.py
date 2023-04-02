@@ -29,14 +29,14 @@ def main(cfg: DictConfig) -> None:
 
     # Loading Image
     original_cwd = get_original_cwd()  # hydra changes the default path, goes back
-    folder_path = os.path.join(original_cwd, cfg.TEST.image_folder)
-    images = load_and_preprocess_images(folder_path, cfg.TEST.image_size)
+    folder_path = os.path.join(original_cwd, cfg.image_folder)
+    images = load_and_preprocess_images(folder_path, cfg.image_size)
 
     # Or randomly generated image, ranging from 0 to 1
     # images = torch.rand(10, 3, 224, 224)
 
     # Load the pre-set checkpoint
-    ckpt_path = os.path.join(original_cwd, cfg.TEST.ckpt)
+    ckpt_path = os.path.join(original_cwd, cfg.ckpt)
     if os.path.isfile(ckpt_path):
         checkpoint = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(checkpoint, strict=False)
