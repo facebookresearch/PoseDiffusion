@@ -79,5 +79,5 @@ class PoseDiffusionModel(nn.Module):
         pose, pose_process = self.diffuser.sample(shape=target_shape, z=z)
 
         pose, fl = optform_to_cam(pose, optform_type=self.optform)
-        
+
         return pose, fl

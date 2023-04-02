@@ -248,7 +248,6 @@ class GaussianDiffusion(nn.Module):
     ):
         preds = self.model_predictions(x, t, z)
 
-
         x_start = preds.pred_x_start
 
         if clip_denoised:
@@ -308,7 +307,7 @@ class GaussianDiffusion(nn.Module):
                 z=z,
             )
             pose_process.append(pose.unsqueeze(0))
-            
+
         return pose, torch.cat(pose_process)
 
     @torch.no_grad()

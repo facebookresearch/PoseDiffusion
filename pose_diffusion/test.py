@@ -57,13 +57,34 @@ def main(cfg: DictConfig) -> None:
     with torch.no_grad():
         # pred_pose: (B,N,4,4)
         # pred_fl:   (B,N,2)
-        
+
         # The poses and focal length are defined as
-        # NDC coordinate system in 
+        # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
         pred_pose, pred_fl = model(image=images)
 
+    print(
+        f"For samples/apple: the std of pred_pose is {pred_pose.std():.2f}, which should be close to 0.67"
+    )
+    print(
+        f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.2f}, which should be close to 0.21"
+    )
+
     print("done")
+
+    # if False:
+    #     import time
+
+    #     start_time = time.time()
+    #     num_runs = 100
+
+    #     for _ in range(num_runs):
+    #         pred_pose, pred_fl = model(image=images)
+
+    #     end_time = time.time()
+    #     elapsed_time = end_time - start_time
+    #     average_time = elapsed_time / num_runs
+    #     print(f"Elapsed time: {average_time} seconds")
 
 
 if __name__ == "__main__":

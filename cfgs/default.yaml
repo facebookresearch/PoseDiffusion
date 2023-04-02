@@ -15,8 +15,6 @@ MODEL:
         _target_: models.GaussianDiffusion
         beta_schedule: custom
 
-        
-
 TEST:
     image_folder: samples/apple
     image_size: 224
