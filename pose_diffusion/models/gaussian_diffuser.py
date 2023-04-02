@@ -247,6 +247,8 @@ class GaussianDiffusion(nn.Module):
         clip_denoised=False,
     ):
         preds = self.model_predictions(x, t, z)
+
+
         x_start = preds.pred_x_start
 
         if clip_denoised:
@@ -257,6 +259,7 @@ class GaussianDiffusion(nn.Module):
         model_mean, posterior_variance, posterior_log_variance = self.q_posterior(
             x_start=x_start, x_t=x, t=t
         )
+
         return model_mean, posterior_variance, posterior_log_variance, x_start
 
     @torch.no_grad()
@@ -277,6 +280,7 @@ class GaussianDiffusion(nn.Module):
             x_self_cond=x_self_cond,
             clip_denoised=clip_denoised,
         )
+
         noise = torch.randn_like(x) if t > 0 else 0.0  # no noise if t == 0
         pred = model_mean + (0.5 * model_log_variance).exp() * noise
         return pred, x_start
@@ -304,7 +308,7 @@ class GaussianDiffusion(nn.Module):
                 z=z,
             )
             pose_process.append(pose.unsqueeze(0))
-
+            
         return pose, torch.cat(pose_process)
 
     @torch.no_grad()

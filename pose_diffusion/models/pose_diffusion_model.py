@@ -30,7 +30,7 @@ from pytorch3d.transforms import (
     Transform3d,
     so3_relative_angle,
 )
-from util.rt_transform import optform_to_rt
+from util.rt_transform import optform_to_cam
 
 import models
 from hydra.utils import instantiate
@@ -78,6 +78,6 @@ class PoseDiffusionModel(nn.Module):
 
         pose, pose_process = self.diffuser.sample(shape=target_shape, z=z)
 
-        pose = optform_to_rt(pose, optform_type=self.optform)
+        pose, fl = optform_to_cam(pose, optform_type=self.optform)
         
-        return pose
+        return pose, fl

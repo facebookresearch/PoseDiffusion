@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Union
 from omegaconf import OmegaConf, DictConfig
 import hydra
 from hydra.utils import instantiate, get_original_cwd
+from util.utils import seed_all_random_engines
 from util.load_img_folder import load_and_preprocess_images
 import models
 
@@ -51,13 +52,16 @@ def main(cfg: DictConfig) -> None:
     # Evaluation Mode
     model.eval()
 
+    seed_all_random_engines(0)
     # Forward
     with torch.no_grad():
-        pred_pose = model(image=images)
-
-    import pdb
-
-    pdb.set_trace()
+        # pred_pose: (B,N,4,4)
+        # pred_fl:   (B,N,2)
+        
+        # The poses and focal length are defined as
+        # NDC coordinate system in 
+        # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
+        pred_pose, pred_fl = model(image=images)
 
     print("done")
 

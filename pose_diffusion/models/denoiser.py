@@ -31,7 +31,7 @@ class Denoiser(nn.Module):
         append_t: bool = True,
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
-        time_multiplier: float = 0.1,
+        time_multiplier: float = 0.01,
         nhead: int = 4,
         d_model: int = 512,
         dim_feedforward: int = 1024,
