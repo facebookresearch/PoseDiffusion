@@ -2,7 +2,7 @@
 
 Please refer to [pixar_replay](https://github.com/fairinternal/pixar_replay) for the installation instruction.
 
-The ckpt is available in [dropbox](https://www.dropbox.com/s/unsgup5yu2pmusk/co3d_model0.pth?dl=0) and TBD.
+The ckpt is available in [dropbox](https://www.dropbox.com/s/unsgup5yu2pmusk/co3d_model0.pth?dl=0).
 
 Example usage:
 
