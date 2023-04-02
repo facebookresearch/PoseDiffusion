@@ -72,20 +72,7 @@ def main(cfg: DictConfig) -> None:
 
     print("done")
 
-    # if False:
-    #     import time
-
-    #     start_time = time.time()
-    #     num_runs = 100
-
-    #     for _ in range(num_runs):
-    #         pred_pose, pred_fl = model(image=images)
-
-    #     end_time = time.time()
-    #     elapsed_time = end_time - start_time
-    #     average_time = elapsed_time / num_runs
-    #     print(f"Elapsed time: {average_time} seconds")
-
+    
 
 if __name__ == "__main__":
     main()
