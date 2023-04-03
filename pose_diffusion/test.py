@@ -63,16 +63,8 @@ def main(cfg: DictConfig) -> None:
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
         pred_pose, pred_fl = model(image=images)
 
-    print(
-        f"For samples/apple: the std of pred_pose is {pred_pose.std():.2f}, which should be close to 0.67"
-    )
-    print(
-        f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.2f}, which should be close to 0.21"
-    )
-
     print("done")
 
-    
 
 if __name__ == "__main__":
     main()
