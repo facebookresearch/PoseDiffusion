@@ -19,7 +19,7 @@ By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequenc
 - [x] Installation
 - [x] Model Weights
 - [x] Verification
-- [ ] BARF/NeRF
+- [ ] BARF
 - [ ] Visualization tool
 - [ ] PyTorch 2.0
 - [ ] Training Pipeline
