@@ -10,7 +10,6 @@ MODEL:
 
     IMG_FEATURE_EXTRACTOR: 
         _target_: models.ImageFeatureExtractor
-        multiscale: True
         freeze: False
 
     DENOISER: 

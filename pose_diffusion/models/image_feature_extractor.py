@@ -30,12 +30,10 @@ class ImageFeatureExtractor(nn.Module):
     def __init__(
         self,
         modelname: str = "dino_vits16",
-        multiscale: bool = True,
         freeze: bool = False,
         scale_factors: list = [1, 1 / 2, 1 / 3],
     ):
         super().__init__()
-        self.multiscale = multiscale
         self.freeze = freeze
         self.scale_factors = scale_factors
 
@@ -69,10 +67,7 @@ class ImageFeatureExtractor(nn.Module):
     def forward(self, image_rgb: torch.Tensor) -> torch.Tensor:
         img_normed = self._resnet_normalize_image(image_rgb)
 
-        if self.multiscale:
-            features = self._compute_multiscale_features(img_normed)
-        else:
-            features = self._net(img_normed)
+        features = self._compute_multiscale_features(img_normed)
 
         return features
 
@@ -81,6 +76,9 @@ class ImageFeatureExtractor(nn.Module):
 
     def _compute_multiscale_features(self, img_normed: torch.Tensor) -> torch.Tensor:
         multiscale_features = None
+
+        if len(self.scale_factors)<=0:
+            raise ValueError(f"Wrong format of self.scale_factors as {self.scale_factors}")
 
         for scale_factor in self.scale_factors:
             if scale_factor == 1:
