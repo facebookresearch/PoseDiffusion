@@ -13,7 +13,7 @@ def _load_image(path) -> np.ndarray:
     return im
 
 
-def center_crop_square(image: np.ndarray) -> np.ndarray:
+def _center_crop_square(image: np.ndarray) -> np.ndarray:
     h, w = image.shape[1:]
     min_dim = min(h, w)
     top = (h - min_dim) // 2
@@ -35,28 +35,14 @@ def load_and_preprocess_images(
     images = []
     for path in image_paths:
         image = _load_image(path)
-        image = center_crop_square(image)
-
-        image_height, image_width = image_size, image_size
+        image = _center_crop_square(image)
 
         imre = F.interpolate(
             torch.from_numpy(image)[None],
-            size=(image_height, image_width),
+            size=(image_size, image_size),
             mode=mode,
             align_corners=False if mode == "bilinear" else None,
         )[0]
-
-        # minscale = min(
-        #     image_height / image.shape[-2],
-        #     image_width / image.shape[-1],
-        # )
-        # imre = F.interpolate(
-        #     torch.from_numpy(image)[None],
-        #     scale_factor=minscale,
-        #     mode=mode,
-        #     align_corners=False if mode == "bilinear" else None,
-        #     recompute_scale_factor=True,
-        # )[0]
 
         images.append(imre.numpy())
 

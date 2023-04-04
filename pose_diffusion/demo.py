@@ -58,7 +58,7 @@ def main(cfg: DictConfig) -> None:
         # The poses and focal length are defined as
         # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
-        pred_pose, pred_fl = model(image=images)
+        pred_pose, pred_focal_length = model(image=images)
 
     print(
         f"For samples/apple: the std of pred_pose is {pred_pose.std():.2f}, which should be close to 0.67"
