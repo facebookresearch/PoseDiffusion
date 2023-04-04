@@ -28,7 +28,7 @@ from pytorch3d.transforms import (
     Transform3d,
     so3_relative_angle,
 )
-from util.rt_transform import optform_to_cam
+from util.camera_transform import pose_encoding_to_camera
 
 import models
 from hydra.utils import instantiate
@@ -39,21 +39,23 @@ logger = logging.getLogger(__name__)
 class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
-        optform,
-        Img_Feature_Extractor: Dict,
+        pose_encoding: str,
+        IMG_FEATURE_EXTRACTOR: Dict,
         DIFFUSER: Dict,
         DENOISER: Dict,
     ):
         super().__init__()
-        # optform defines the SE(3) matrix representation (i.e., [R t]) for optimization purposes.
+        # pose_encoding defines the SE(3) matrix representation (i.e., [R t]) for optimization purposes.
         # e.g., "absT_quaR_logFL" implies the usage of absolute translation, quaternion rotation,
         # and logarithm of the focal length for the representation.
-        self.optform = optform
+        self.pose_encoding = pose_encoding
 
-        self.img_feature_extractor = instantiate(Img_Feature_Extractor)
-        self.diffuser = instantiate(DIFFUSER)
+        self.img_feature_extractor = instantiate(
+            IMG_FEATURE_EXTRACTOR, _recursive_=False
+        )
+        self.diffuser = instantiate(DIFFUSER, _recursive_=False)
 
-        denoiser = instantiate(DENOISER)
+        denoiser = instantiate(DENOISER, _recursive_=False)
         self.diffuser.model = denoiser
 
         self.target_dim = denoiser.target_dim
@@ -74,8 +76,8 @@ class PoseDiffusionModel(nn.Module):
         B, N, _ = z.shape
         target_shape = [B, N, self.target_dim]
 
-        pose, pose_process = self.diffuser.sample(shape=target_shape, z=z)
+        pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(shape=target_shape, z=z)
 
-        pose, fl = optform_to_cam(pose, optform_type=self.optform)
+        pose, fl = pose_encoding_to_camera(pose, pose_encoding_type=self.pose_encoding)
 
         return pose, fl

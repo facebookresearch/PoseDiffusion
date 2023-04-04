@@ -12,6 +12,11 @@ python test.py image_folder="samples/apple" ckpt="co3d_model0.pth"
 
 By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence is around 0.8 second.
 
+## Acknowledgement
+
+Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch).
+
+
 ## TODO
 
 - [x] Config System

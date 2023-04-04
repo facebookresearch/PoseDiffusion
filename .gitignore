@@ -13,3 +13,6 @@ test_visualizations/**
 visualisations/**
 **/data/**
 *.log
+# Ignore .DS_Store files in any folder
+.DS_Store
+**/.DS_Store

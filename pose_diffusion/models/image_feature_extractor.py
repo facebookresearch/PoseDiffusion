@@ -26,7 +26,7 @@ _RESNET_MEAN = [0.485, 0.456, 0.406]
 _RESNET_STD = [0.229, 0.224, 0.225]
 
 
-class ImageGlobalExtractor(nn.Module):
+class ImageFeatureExtractor(nn.Module):
     def __init__(
         self,
         modelname: str = "dino_vits16",
@@ -47,7 +47,7 @@ class ImageGlobalExtractor(nn.Module):
             self._net = torch.hub.load("facebookresearch/dino:main", modelname)
             self._output_dim = self._net.norm.weight.shape[0]
         else:
-            raise ValueError(f"unknown model name {modelname}")
+            raise ValueError(f"Unknown model name {modelname}")
 
         for name, value in (
             ("_resnet_mean", _RESNET_MEAN),
@@ -66,7 +66,7 @@ class ImageGlobalExtractor(nn.Module):
     def get_output_dim(self):
         return self._output_dim
 
-    def forward(self, image_rgb: Optional[torch.Tensor]) -> torch.Tensor:
+    def forward(self, image_rgb: torch.Tensor) -> torch.Tensor:
         img_normed = self._resnet_normalize_image(image_rgb)
 
         if self.multiscale:
@@ -84,7 +84,7 @@ class ImageGlobalExtractor(nn.Module):
 
         for scale_factor in self.scale_factors:
             if scale_factor == 1:
-                inp = img_normed.clone()
+                inp = img_normed
             else:
                 inp = self._resize_image(img_normed, scale_factor)
 

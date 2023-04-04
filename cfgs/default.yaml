@@ -6,15 +6,26 @@ ckpt: co3d_model0.pth
 MODEL:
     _target_: models.PoseDiffusionModel
 
-    optform: absT_quaR_logFL
+    pose_encoding: absT_quaR_logFL
 
-    Img_Feature_Extractor: 
-        _target_: models.ImageGlobalExtractor
+    IMG_FEATURE_EXTRACTOR: 
+        _target_: models.ImageFeatureExtractor
         multiscale: True
         freeze: False
 
     DENOISER: 
         _target_: models.Denoiser
+        TRANSFORMER:
+            _target_:               torch.nn.Transformer
+            d_model:                512
+            nhead:                  4
+            dim_feedforward:        1024
+            num_encoder_layers:     2
+            num_decoder_layers:     6
+            dropout:                0.1
+            batch_first:            True
+            norm_first:             True
+
 
     DIFFUSER:
         _target_: models.GaussianDiffusion

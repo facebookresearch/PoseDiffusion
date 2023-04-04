@@ -32,9 +32,6 @@ def main(cfg: DictConfig) -> None:
     folder_path = os.path.join(original_cwd, cfg.image_folder)
     images = load_and_preprocess_images(folder_path, cfg.image_size)
 
-    # Or randomly generated image, ranging from 0 to 1
-    # images = torch.rand(10, 3, 224, 224)
-
     # Load the pre-set checkpoint
     ckpt_path = os.path.join(original_cwd, cfg.ckpt)
     if os.path.isfile(ckpt_path):

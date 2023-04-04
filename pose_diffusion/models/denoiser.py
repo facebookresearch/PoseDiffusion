@@ -19,6 +19,8 @@ import torchvision
 import io
 from PIL import Image
 import numpy as np
+from hydra.utils import instantiate
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,23 +28,16 @@ logger = logging.getLogger(__name__)
 class Denoiser(nn.Module):
     def __init__(
         self,
+        TRANSFORMER: Dict,
         target_dim: int = 9,  # TODO: fl dim from 2 to 1
         pivot_cam_onehot: bool = True,
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
         time_multiplier: float = 0.01,
-        nhead: int = 4,
-        d_model: int = 512,
-        dim_feedforward: int = 1024,
-        num_encoder_layers: int = 2,
-        num_decoder_layers: int = 6,
-        dropout: float = 0.1,  # TODO: necessary?
-        norm_first: bool = True,
         proj_xt_first: bool = True,
         proj_dim: int = 96,
     ):
         super().__init__()
-        import pdb;pdb.set_trace()
 
         self.pivot_cam_onehot = pivot_cam_onehot
         self.target_dim = target_dim
@@ -50,26 +45,26 @@ class Denoiser(nn.Module):
         self.proj_xt_first = proj_xt_first
 
         self.proj_xt = torch.nn.Linear(self.target_dim + 1, proj_dim)
+
         first_dim = (
             self.target_dim
             + z_dim
             + proj_dim
             + int(self.pivot_cam_onehot)
-            + 1                          # 1 dim for timestep t
+            + 1  # 1 dim for timestep t
         )
 
+        d_model = TRANSFORMER.d_model
         # TODO: rename _first, _trunk, and _last
         self._first = nn.Linear(first_dim, d_model)
-        self._trunk = nn.Transformer(
-            d_model=d_model,
-            nhead=nhead,
-            num_encoder_layers=num_encoder_layers,
-            num_decoder_layers=num_decoder_layers,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            batch_first=True,
-            norm_first=norm_first,
-        )
+
+        self._trunk = instantiate(TRANSFORMER, _recursive_=False)
+        # The usage of instantiate here is the same as:
+        # self._trunk = torch.nn.Transformer(
+        #     d_model=TRANSFORMER.d_model,
+        #     ...
+        #     norm_first=TRANSFORMER.norm_first,
+        # )
 
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
@@ -109,7 +104,6 @@ class Denoiser(nn.Module):
 
         featdim = feats_.shape[-1]
         output = self._last(feats_.reshape(-1, featdim)).reshape(B, N, -1)
-
 
         return output
 
