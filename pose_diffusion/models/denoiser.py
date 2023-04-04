@@ -34,7 +34,6 @@ class Denoiser(nn.Module):
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
         time_multiplier: float = 0.01,
-        proj_xt_first: bool = True,
         proj_dim: int = 96,
     ):
         super().__init__()
@@ -42,7 +41,6 @@ class Denoiser(nn.Module):
         self.pivot_cam_onehot = pivot_cam_onehot
         self.target_dim = target_dim
         self.time_multiplier = time_multiplier
-        self.proj_xt_first = proj_xt_first
 
         self.proj_xt = torch.nn.Linear(self.target_dim + 1, proj_dim)
 
@@ -91,12 +89,10 @@ class Denoiser(nn.Module):
             cam_pivot_id[:, 0, ...] = 1.0
             z = torch.cat([z, cam_pivot_id], dim=-1)
 
-        if self.proj_xt_first:
-            xt = self.proj_xt(torch.cat([x, t_expand], dim=-1))
-            feed_feats = torch.cat([x, t_expand, xt, z], dim=-1)
-        else:
-            # TODO: add the variants here
-            raise ValueError(f"More variants to be implemented")
+        # projection
+        xt = self.proj_xt(torch.cat([x, t_expand], dim=-1))
+        feed_feats = torch.cat([x, t_expand, xt, z], dim=-1)
+
 
         input_ = self._first(feed_feats)
 
