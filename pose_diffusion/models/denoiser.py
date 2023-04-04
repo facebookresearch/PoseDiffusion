@@ -27,8 +27,7 @@ class Denoiser(nn.Module):
     def __init__(
         self,
         target_dim: int = 9,  # TODO: fl dim from 2 to 1
-        pivot_cam: bool = True,
-        append_t: bool = True,
+        pivot_cam_onehot: bool = True,
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
         time_multiplier: float = 0.01,
@@ -43,9 +42,9 @@ class Denoiser(nn.Module):
         proj_dim: int = 96,
     ):
         super().__init__()
+        import pdb;pdb.set_trace()
 
-        self.pivot_cam = pivot_cam
-        self.append_t = append_t
+        self.pivot_cam_onehot = pivot_cam_onehot
         self.target_dim = target_dim
         self.time_multiplier = time_multiplier
         self.proj_xt_first = proj_xt_first
@@ -55,8 +54,8 @@ class Denoiser(nn.Module):
             self.target_dim
             + z_dim
             + proj_dim
-            + int(self.pivot_cam)
-            + int(self.append_t)
+            + int(self.pivot_cam_onehot)
+            + 1                          # 1 dim for timestep t
         )
 
         # TODO: rename _first, _trunk, and _last
@@ -90,7 +89,7 @@ class Denoiser(nn.Module):
         # expand t from B to B x N_x x 1
         t_expand = (t * self.time_multiplier).view(B, 1, 1).expand(-1, N, -1)
 
-        if self.pivot_cam:
+        if self.pivot_cam_onehot:
             # add the one hot vector identifying the first camera as pivot
             # NOTE we treat the first camera as pivot during training
             cam_pivot_id = torch.zeros_like(z[..., :1])
@@ -102,17 +101,15 @@ class Denoiser(nn.Module):
             feed_feats = torch.cat([x, t_expand, xt, z], dim=-1)
         else:
             # TODO: add the variants here
-            raise NotImplementedError(f"Variants to be implemented")
+            raise ValueError(f"More variants to be implemented")
 
         input_ = self._first(feed_feats)
 
         feats_ = self._trunk(input_, input_)
 
-        if isinstance(self._last, MLP):
-            _, _, featdim = feats_.shape
-            output = self._last(feats_.reshape(-1, featdim)).reshape(B, N, -1)
-        else:
-            output = self._last(feats_)
+        featdim = feats_.shape[-1]
+        output = self._last(feats_.reshape(-1, featdim)).reshape(B, N, -1)
+
 
         return output
 

@@ -19,8 +19,6 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
 from PIL import Image
 from pytorch3d.ops import corresponding_cameras_alignment
 from pytorch3d.renderer.cameras import CamerasBase
