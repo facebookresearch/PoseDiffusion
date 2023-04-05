@@ -25,6 +25,7 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Model Weights
 - [x] Verification
 - [ ] BARF
+- [ ] Update Model Weights to V1
 - [ ] Visualization tool
 - [ ] PyTorch 2.0
 - [ ] Training Pipeline
