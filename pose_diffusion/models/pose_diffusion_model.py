@@ -40,7 +40,7 @@ class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
         pose_encoding: str,
-        IMG_FEATURE_EXTRACTOR: Dict,
+        IMAGE_FEATURE_EXTRACTOR: Dict,
         DIFFUSER: Dict,
         DENOISER: Dict,
     ):
@@ -50,8 +50,8 @@ class PoseDiffusionModel(nn.Module):
         # and logarithm of the focal length for the representation.
         self.pose_encoding = pose_encoding
 
-        self.img_feature_extractor = instantiate(
-            IMG_FEATURE_EXTRACTOR, _recursive_=False
+        self.image_feature_extractor = instantiate(
+            IMAGE_FEATURE_EXTRACTOR, _recursive_=False
         )
         self.diffuser = instantiate(DIFFUSER, _recursive_=False)
 
@@ -67,7 +67,7 @@ class PoseDiffusionModel(nn.Module):
         sequence_name: Optional[List[str]] = None,
         matches_dict=None,
     ) -> Dict[str, Any]:
-        z = self.img_feature_extractor(image)
+        z = self.image_feature_extractor(image)
 
         # TODO: unsqueeze to be consistent with our original implementation
         # remove this in the future

@@ -8,8 +8,8 @@ MODEL:
 
     pose_encoding: absT_quaR_logFL
 
-    IMG_FEATURE_EXTRACTOR: 
-        _target_: models.ImageFeatureExtractor
+    IMAGE_FEATURE_EXTRACTOR: 
+        _target_: models.MultiScaleImageFeatureExtractor
         freeze: False
 
     DENOISER: 

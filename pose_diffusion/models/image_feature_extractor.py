@@ -26,7 +26,7 @@ _RESNET_MEAN = [0.485, 0.456, 0.406]
 _RESNET_STD = [0.229, 0.224, 0.225]
 
 
-class ImageFeatureExtractor(nn.Module):
+class MultiScaleImageFeatureExtractor(nn.Module):
     def __init__(
         self,
         modelname: str = "dino_vits16",
