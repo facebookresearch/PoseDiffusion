@@ -80,8 +80,8 @@ class PoseDiffusionModel(nn.Module):
             shape=target_shape, z=z
         )
 
-        pose, fl = pose_encoding_to_camera(
+        pose, focal_length = pose_encoding_to_camera(
             pose_encoding, pose_encoding_type=self.pose_encoding
         )
 
-        return pose, fl
+        return pose, focal_length
