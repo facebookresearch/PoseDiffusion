@@ -26,7 +26,7 @@ from hloc.utils.database import (
 )
 
 
-def extract_match(image_folder_path: str) -> Dict:
+def extract_match(image_folder_path: str):
     # Now support SPSG
     with tempfile.TemporaryDirectory() as tmpdir:
         images_dir = os.path.join(tmpdir, "mapping")
@@ -35,7 +35,8 @@ def extract_match(image_folder_path: str) -> Dict:
     return matches, keypoints
 
 
-def run_hloc(output_dir):
+def run_hloc(output_dir: str):
+    # Largely borrowed from hlob
     images = Path(output_dir)
     outputs = Path(os.path.join(output_dir, "output"))
     sfm_pairs = outputs / "pairs-sfm.txt"
@@ -82,9 +83,9 @@ def compute_match_and_keypoint(
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database = sfm_dir / "database.db"
 
-    create_empty_db(database)
-    import_images(image_dir, database, camera_mode, image_list, image_options)
-    image_ids = get_image_ids(database)
+    _create_empty_db(database)
+    _import_images(image_dir, database, camera_mode, image_list, image_options)
+    image_ids = _get_image_ids(database)
     import_features(image_ids, database, features)
     import_matches(image_ids, database, pairs, matches, min_match_score)
     estimation_and_geometric_verification(database, pairs, verbose)
@@ -92,12 +93,12 @@ def compute_match_and_keypoint(
     db = COLMAPDatabase.connect(database)
 
     matches = dict(
-        (pair_id_to_image_ids(pair_id), blob_to_array_safe(data, np.uint32, (-1, 2)))
+        (pair_id_to_image_ids(pair_id), _blob_to_array_safe(data, np.uint32, (-1, 2)))
         for pair_id, data in db.execute("SELECT pair_id, data FROM matches")
     )
 
     keypoints = dict(
-        (image_id, blob_to_array_safe(data, np.float32, (-1, 2)))
+        (image_id, _blob_to_array_safe(data, np.float32, (-1, 2)))
         for image_id, data in db.execute("SELECT image_id, data FROM keypoints")
     )
 
@@ -109,7 +110,7 @@ def compute_match_and_keypoint(
 # helper functions
 
 
-def create_empty_db(database_path: Path):
+def _create_empty_db(database_path: Path):
     if database_path.exists():
         logger.warning("The database already exists, deleting it.")
         database_path.unlink()
@@ -120,7 +121,7 @@ def create_empty_db(database_path: Path):
     db.close()
 
 
-def import_images(
+def _import_images(
     image_dir: Path,
     database_path: Path,
     camera_mode: pycolmap.CameraMode,
@@ -143,7 +144,7 @@ def import_images(
         )
 
 
-def get_image_ids(database_path: Path) -> Dict[str, int]:
+def _get_image_ids(database_path: Path) -> Dict[str, int]:
     db = COLMAPDatabase.connect(database_path)
     images = {}
     for name, image_id in db.execute("SELECT name, image_id FROM images;"):
@@ -152,7 +153,7 @@ def get_image_ids(database_path: Path) -> Dict[str, int]:
     return images
 
 
-def blob_to_array_safe(blob, dtype, shape=(-1,)):
+def _blob_to_array_safe(blob, dtype, shape=(-1,)):
     if blob is not None:
         return np.fromstring(blob, dtype=dtype).reshape(*shape)
     else:
