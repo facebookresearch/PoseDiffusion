@@ -12,6 +12,7 @@ from omegaconf import OmegaConf, DictConfig
 import hydra
 from hydra.utils import instantiate, get_original_cwd
 from util.utils import seed_all_random_engines
+from util.match_extraction import extract_match
 from util.load_img_folder import load_and_preprocess_images
 import models
 
@@ -50,6 +51,15 @@ def main(cfg: DictConfig) -> None:
     model.eval()
 
     seed_all_random_engines(0)
+
+    # Match extraction
+    if cfg.GGS.open:
+        matches, keypoints = extract_match(folder_path)
+
+        import pdb
+
+        pdb.set_trace()
+
     # Forward
     with torch.no_grad():
         # pred_pose: (B,N,4,4)

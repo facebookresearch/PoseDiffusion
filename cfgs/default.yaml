@@ -2,6 +2,9 @@ image_folder: samples/apple
 image_size: 224
 ckpt: co3d_model0.pth
 
+GGS:
+    open: True
+
 
 MODEL:
     _target_: models.PoseDiffusionModel

@@ -14,7 +14,7 @@ By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequenc
 
 ## Acknowledgement
 
-Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch).
+Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch) and [hloc](https://github.com/cvg/Hierarchical-Localization).
 
 
 ## TODO
@@ -24,6 +24,9 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Installation
 - [x] Model Weights
 - [x] Verification
+- [x] Match Extraction  
+- [ ] Verify Match Extraction  
+- [ ] Geometry Guided Sampling
 - [ ] BARF
 - [ ] Update Model Weights to V1
 - [ ] Visualization tool
@@ -33,8 +36,6 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [ ] Large-scale training
 - [ ] Simplified Installation
 - [ ] General cross dataset testing
-- [ ] Match Extraction  
-- [ ] Geometry Guided Sampling
 
 
 
