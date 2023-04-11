@@ -26,13 +26,49 @@ from hloc.utils.database import (
 )
 
 
-def extract_match(image_folder_path: str):
+def extract_match(image_folder_path: str, image_info: Dict):
     # Now support SPSG
     with tempfile.TemporaryDirectory() as tmpdir:
-        images_dir = os.path.join(tmpdir, "mapping")
-        shutil.copytree(image_folder_path, images_dir)
+        shutil.copytree(image_folder_path, os.path.join(tmpdir, "mapping"))
         matches, keypoints = run_hloc(tmpdir)
-    return matches, keypoints
+
+    # From the format of colmap to PyTorch3D
+    kp1, kp2, i12 = colmap_keypoint_to_pytorch3d(matches, keypoints, image_info)
+
+    return kp1, kp2, i12
+
+
+def colmap_keypoint_to_pytorch3d(matches, keypoints, image_info):
+    kp1, kp2, i12 = [], [], []
+    bbox_xyxy, scale = image_info["bboxes_xyxy"], image_info["resized_scales"]
+
+    for idx in keypoints:
+        # coordinate change from COLMAP to OpenCV
+        cur_keypoint = keypoints[idx] - 0.5
+
+        # go to the coordiante after cropping
+        # use idx - 1 here because the COLMAP format starts from 1 instead of 0
+        cur_keypoint = cur_keypoint - [
+            bbox_xyxy[idx - 1][0],
+            bbox_xyxy[idx - 1][1],
+        ]
+        cur_keypoint = cur_keypoint * scale[idx - 1]
+        keypoints[idx] = cur_keypoint
+
+    for (r_idx, q_idx), pair_match in matches.items():
+        if pair_match is not None:
+            kp1.append(keypoints[r_idx][pair_match[:, 0]])
+            kp2.append(keypoints[q_idx][pair_match[:, 1]])
+
+            i12_pair = np.array([[r_idx - 1, q_idx - 1]])
+            i12.append(np.repeat(i12_pair, len(pair_match), axis=0))
+
+    if kp1:
+        kp1, kp2, i12 = map(np.concatenate, (kp1, kp2, i12), (0, 0, 0))
+    else:
+        kp1 = kp2 = i12 = None
+
+    return kp1, kp2, i12
 
 
 def run_hloc(output_dir: str):

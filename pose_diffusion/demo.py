@@ -31,7 +31,7 @@ def main(cfg: DictConfig) -> None:
     # Loading Image
     original_cwd = get_original_cwd()  # hydra changes the default path, goes back
     folder_path = os.path.join(original_cwd, cfg.image_folder)
-    images = load_and_preprocess_images(folder_path, cfg.image_size)
+    images, image_info = load_and_preprocess_images(folder_path, cfg.image_size)
 
     # Load the pre-set checkpoint
     ckpt_path = os.path.join(original_cwd, cfg.ckpt)
@@ -54,11 +54,10 @@ def main(cfg: DictConfig) -> None:
 
     # Match extraction
     if cfg.GGS.open:
-        matches, keypoints = extract_match(folder_path)
+        kp1, kp2, i12 = extract_match(folder_path, image_info)
 
-        import pdb
-
-        pdb.set_trace()
+        # TODO Do we need to remove the keypoints outside the cropped region?
+        # import pdb;pdb.set_trace()
 
     # Forward
     with torch.no_grad():
@@ -70,11 +69,14 @@ def main(cfg: DictConfig) -> None:
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
         pred_pose, pred_focal_length = model(image=images)
 
+    import pdb
+
+    pdb.set_trace()
     print(
-        f"For samples/apple: the std of pred_pose is {pred_pose.std():.2f}, which should be close to 0.67"
+        f"For samples/apple: the std of pred_pose is {pred_pose.std():.6f}, which should be close to 0.673024"
     )
     print(
-        f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.2f}, which should be close to 0.21"
+        f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.6f}, which should be close to 0.208234"
     )
 
     print("done")

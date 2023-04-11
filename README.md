@@ -25,7 +25,7 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Model Weights
 - [x] Verification
 - [x] Match Extraction  
-- [ ] Verify Match Extraction  
+- [x] Verify Match Extraction  
 - [ ] Geometry Guided Sampling
 - [ ] BARF
 - [ ] Update Model Weights to V1
