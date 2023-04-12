@@ -10,7 +10,9 @@ Example usage:
 python test.py image_folder="samples/apple" ckpt="co3d_model0.pth"
 ```
 
-By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence is around 0.8 second.
+By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds.
+
+Our current implementation of GGS is slightly different from the submitted paper.
 
 ## Acknowledgement
 
@@ -26,7 +28,8 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Verification
 - [x] Match Extraction  
 - [x] Verify Match Extraction  
-- [ ] Geometry Guided Sampling
+- [x] GGS
+- [ ] Verify GGS
 - [ ] BARF
 - [ ] Update Model Weights to V1
 - [ ] Visualization tool
@@ -43,7 +46,7 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 ## Wait a Second
 - [ ] Non Rigid
 - [ ] Unsupervised
-- [ ] Large Model
+- [ ] Large Model (Ongoing)
 
 
 

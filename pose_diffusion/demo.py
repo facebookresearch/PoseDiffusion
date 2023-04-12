@@ -19,6 +19,7 @@ import models
 
 @hydra.main(config_path="../cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
+    OmegaConf.set_struct(cfg, False)
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
 
@@ -52,12 +53,33 @@ def main(cfg: DictConfig) -> None:
 
     seed_all_random_engines(0)
 
+    import time
+
+    # Start the timer
+    start_time = time.time()
+
     # Match extraction
     if cfg.GGS.open:
+        # TODO Optional: remove the keypoints outside the cropped region?
         kp1, kp2, i12 = extract_match(folder_path, image_info)
-
-        # TODO Do we need to remove the keypoints outside the cropped region?
-        # import pdb;pdb.set_trace()
+        cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding
+        matches_dict = {
+            "kp1": kp1,
+            "kp2": kp2,
+            "i12": i12,
+            "img_shape": images.shape,
+            "device": device,
+            "GGS_cfg": cfg.GGS,
+        }
+    else:
+        matches_dict = {
+            "kp1": None,
+            "kp2": None,
+            "i12": None,
+            "img_shape": None,
+            "device": None,
+            "GGS_cfg": cfg.GGS,
+        }
 
     # Forward
     with torch.no_grad():
@@ -67,11 +89,8 @@ def main(cfg: DictConfig) -> None:
         # The poses and focal length are defined as
         # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
-        pred_pose, pred_focal_length = model(image=images)
+        pred_pose, pred_focal_length = model(image=images, matches_dict=matches_dict)
 
-    import pdb
-
-    pdb.set_trace()
     print(
         f"For samples/apple: the std of pred_pose is {pred_pose.std():.6f}, which should be close to 0.673024"
     )
@@ -80,6 +99,14 @@ def main(cfg: DictConfig) -> None:
     )
 
     print("done")
+
+    # End the timer
+    end_time = time.time()
+    # Calculate the elapsed time
+    elapsed_time = end_time - start_time
+
+    # Print the result
+    print("Time taken: {:.4f} seconds".format(elapsed_time))
 
 
 if __name__ == "__main__":
