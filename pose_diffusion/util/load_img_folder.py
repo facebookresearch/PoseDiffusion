@@ -33,7 +33,6 @@ def load_and_preprocess_images(
     scales = []
     for path in image_paths:
         image = _load_image(path)
-
         image, bbox_xyxy, min_hw = _center_crop_square(image)
         minscale = image_size / min_hw
 
@@ -50,8 +49,10 @@ def load_and_preprocess_images(
 
     images_tensor = torch.from_numpy(np.stack(images))
 
+    # assume all the images have the same shape for GGS
     image_info = {
         "size": (min_hw, min_hw),
+        "shape_ori": image.shape,
         "bboxes_xyxy": np.stack(bboxes_xyxy),
         "resized_scales": np.stack(scales),
     }

@@ -15,7 +15,7 @@ from util.utils import seed_all_random_engines
 from util.match_extraction import extract_match
 from util.load_img_folder import load_and_preprocess_images
 import models
-
+import time
 
 @hydra.main(config_path="../cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
@@ -53,7 +53,6 @@ def main(cfg: DictConfig) -> None:
 
     seed_all_random_engines(0)
 
-    import time
 
     # Start the timer
     start_time = time.time()
@@ -61,25 +60,18 @@ def main(cfg: DictConfig) -> None:
     # Match extraction
     if cfg.GGS.open:
         # TODO Optional: remove the keypoints outside the cropped region?
+                
         kp1, kp2, i12 = extract_match(folder_path, image_info)
         cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding
-        matches_dict = {
-            "kp1": kp1,
-            "kp2": kp2,
-            "i12": i12,
-            "img_shape": images.shape,
-            "device": device,
-            "GGS_cfg": cfg.GGS,
-        }
+        keys = ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]        
+        values = [kp1, kp2, i12, images.shape, device, cfg.GGS]
+        matches_dict = dict(zip(keys, values))
     else:
         matches_dict = {
-            "kp1": None,
-            "kp2": None,
-            "i12": None,
-            "img_shape": None,
-            "device": None,
-            "GGS_cfg": cfg.GGS,
+            key: None for key in ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]
         }
+        matches_dict["GGS_cfg"] = cfg.GGS
+
 
     # Forward
     with torch.no_grad():
@@ -98,14 +90,9 @@ def main(cfg: DictConfig) -> None:
         f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.6f}, which should be close to 0.208234"
     )
 
-    print("done")
-
     # End the timer
     end_time = time.time()
-    # Calculate the elapsed time
     elapsed_time = end_time - start_time
-
-    # Print the result
     print("Time taken: {:.4f} seconds".format(elapsed_time))
 
 
