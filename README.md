@@ -34,6 +34,9 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [ ] Evaluation Pipeline
 - [ ] Statistical Verification of GGS
 
+
+##
+
 - [ ] BARF
 - [ ] Update Model Weights to V1
 - [ ] GGS coordinate from cropped to uncropped
