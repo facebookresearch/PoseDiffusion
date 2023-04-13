@@ -29,7 +29,11 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Match Extraction  
 - [x] Verify Match Extraction  
 - [x] GGS
-- [ ] Verify GGS
+- [x] Case Verification of GGS
+- [ ] A General Dataset Class
+- [ ] Evaluation Pipeline
+- [ ] Statistical Verification of GGS
+
 - [ ] BARF
 - [ ] Update Model Weights to V1
 - [ ] GGS coordinate from cropped to uncropped
