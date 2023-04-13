@@ -10,7 +10,7 @@ Example usage:
 python test.py image_folder="samples/apple" ckpt="co3d_model0.pth"
 ```
 
-By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds (including the time of matching extration).
+By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds (including the time of 20-seconds matching extration).
 
 Our current implementation of GGS is slightly different from mentioned in the submission.
 
