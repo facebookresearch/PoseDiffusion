@@ -58,7 +58,7 @@ def main(cfg: DictConfig) -> None:
     start_time = time.time()
 
     # Match extraction
-    if cfg.GGS.open:
+    if cfg.GGS.enable:
         # TODO Optional: remove the keypoints outside the cropped region?
 
         kp1, kp2, i12 = extract_match(folder_path, image_info)

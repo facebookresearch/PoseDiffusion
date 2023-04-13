@@ -3,7 +3,7 @@ image_size: 224
 ckpt: co3d_model0.pth
 
 GGS:
-    open: True
+    enable: True
     start_step: 10
     lr: 0.01
     iter_num: 100
