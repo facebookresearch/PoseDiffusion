@@ -17,6 +17,7 @@ from util.load_img_folder import load_and_preprocess_images
 import models
 import time
 
+
 @hydra.main(config_path="../cfgs/", config_name="default")
 def main(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
@@ -53,17 +54,16 @@ def main(cfg: DictConfig) -> None:
 
     seed_all_random_engines(0)
 
-
     # Start the timer
     start_time = time.time()
 
     # Match extraction
     if cfg.GGS.open:
         # TODO Optional: remove the keypoints outside the cropped region?
-                
+
         kp1, kp2, i12 = extract_match(folder_path, image_info)
         cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding
-        keys = ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]        
+        keys = ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]
         values = [kp1, kp2, i12, images.shape, device, cfg.GGS]
         matches_dict = dict(zip(keys, values))
     else:
@@ -71,7 +71,6 @@ def main(cfg: DictConfig) -> None:
             key: None for key in ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]
         }
         matches_dict["GGS_cfg"] = cfg.GGS
-
 
     # Forward
     with torch.no_grad():

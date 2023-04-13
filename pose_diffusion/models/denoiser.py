@@ -66,9 +66,7 @@ class Denoiser(nn.Module):
 
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
-            d_model,
-            [mlp_hidden_dim, self.target_dim],
-            norm_layer=nn.LayerNorm,
+            d_model, [mlp_hidden_dim, self.target_dim], norm_layer=nn.LayerNorm,
         )
 
     def forward(

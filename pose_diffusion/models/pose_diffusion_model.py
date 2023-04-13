@@ -77,9 +77,7 @@ class PoseDiffusionModel(nn.Module):
         target_shape = [B, N, self.target_dim]
 
         pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(
-            shape=target_shape,
-            z=z,
-            matches_dict=matches_dict,
+            shape=target_shape, z=z, matches_dict=matches_dict,
         )
 
         pose, focal_length = pose_encoding_to_camera(

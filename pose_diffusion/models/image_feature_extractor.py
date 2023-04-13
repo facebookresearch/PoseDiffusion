@@ -52,9 +52,7 @@ class MultiScaleImageFeatureExtractor(nn.Module):
             ("_resnet_std", _RESNET_STD),
         ):
             self.register_buffer(
-                name,
-                torch.FloatTensor(value).view(1, 3, 1, 1),
-                persistent=False,
+                name, torch.FloatTensor(value).view(1, 3, 1, 1), persistent=False,
             )
 
         if self.freeze:
@@ -99,8 +97,5 @@ class MultiScaleImageFeatureExtractor(nn.Module):
     @staticmethod
     def _resize_image(image: torch.Tensor, scale_factor: float) -> torch.Tensor:
         return nn.functional.interpolate(
-            image,
-            scale_factor=scale_factor,
-            mode="bilinear",
-            align_corners=False,
+            image, scale_factor=scale_factor, mode="bilinear", align_corners=False,
         )

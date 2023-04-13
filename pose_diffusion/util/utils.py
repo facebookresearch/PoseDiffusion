@@ -38,5 +38,3 @@ class CombinedDataLoader:
 
     def __len__(self):
         return self.smallest_length * 2
-
-

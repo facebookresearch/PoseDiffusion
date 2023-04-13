@@ -295,10 +295,7 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(
-        self,
-        shape,
-        z: torch.Tensor,
-        matches_dict: Optional[Dict] = None,
+        self, shape, z: torch.Tensor, matches_dict: Optional[Dict] = None,
     ):
         batch, device = shape[0], self.betas.device
 
@@ -311,12 +308,7 @@ class GaussianDiffusion(nn.Module):
         pose_process.append(pose.unsqueeze(0))
 
         for t in reversed(range(0, self.num_timesteps)):
-            pose, _ = self.p_sample(
-                x=pose,
-                t=t,
-                z=z,
-                matches_dict=matches_dict,
-            )
+            pose, _ = self.p_sample(x=pose, t=t, z=z, matches_dict=matches_dict,)
             pose_process.append(pose.unsqueeze(0))
 
         return pose, torch.cat(pose_process)
@@ -328,11 +320,7 @@ class GaussianDiffusion(nn.Module):
         return sample_fn(shape, z=z, matches_dict=matches_dict)
 
     def p_losses(
-        self,
-        x_start,
-        t,
-        z=None,
-        noise=None,
+        self, x_start, t, z=None, noise=None,
     ):
         noise = default(noise, lambda: torch.randn_like(x_start))
         # noise sample
