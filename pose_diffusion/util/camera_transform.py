@@ -7,13 +7,16 @@ from pytorch3d.transforms.rotation_conversions import (
 
 def pose_encoding_to_camera(
     pose_encoding,
-    pose_encoding_type="basic",
+    pose_encoding_type="absT_quaR_logFL",
     log_focal_length_bias=1.8,
     min_focal_length=0.1,
     max_focal_length=20,
 ):
-    # pose_encoding: BxNxC
-    # process an optimization form camera pose to SE3 [R, T]
+    """
+    Args:
+        pose_encoding: A tensor of shape `BxNxC` containing a batch of `BxN` `C`-dimensional pose encodings.
+        pose_encoding_type: The type of pose encoding, only "absT_quaR_logFL" is supported.
+    """
 
     batch_size, num_poses, _ = pose_encoding.shape
     pose_encoding_reshaped = pose_encoding.reshape(
@@ -50,7 +53,7 @@ def pose_encoding_to_camera(
             focal_length, min=min_focal_length, max=max_focal_length
         )
     else:
-        raise RaiseValueError(f"Unknown pose encoding {pose_encoding_type}")
+        raise ValueError(f"Unknown pose encoding {pose_encoding_type}")
 
     # Reshape se3 back to BxNx4x4
     se3 = se3.reshape(batch_size, num_poses, 4, 4)

@@ -5,8 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-import math
-import warnings
 from collections import defaultdict
 from dataclasses import field, dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable
@@ -14,11 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 
 import torch
 import torch.nn as nn
-import torchvision
 
-import io
-from PIL import Image
-import numpy as np
 from hydra.utils import instantiate
 
 
@@ -82,7 +76,6 @@ class Denoiser(nn.Module):
 
         if self.pivot_cam_onehot:
             # add the one hot vector identifying the first camera as pivot
-            # NOTE we treat the first camera as pivot during training
             cam_pivot_id = torch.zeros_like(z[..., :1])
             cam_pivot_id[:, 0, ...] = 1.0
             z = torch.cat([z, cam_pivot_id], dim=-1)
@@ -131,27 +124,26 @@ class MLP(torch.nn.Sequential):
 
         layers = []
         in_dim = in_channels
-        if norm_first:
-            for hidden_dim in hidden_channels[:-1]:
-                if norm_layer is not None:
-                    layers.append(norm_layer(in_dim))
-                layers.append(torch.nn.Linear(in_dim, hidden_dim, bias=bias))
-                layers.append(activation_layer(**params))
-                if dropout > 0:
-                    layers.append(torch.nn.Dropout(dropout, **params))
-                in_dim = hidden_dim
-        else:
-            for hidden_dim in hidden_channels[:-1]:
-                layers.append(torch.nn.Linear(in_dim, hidden_dim, bias=bias))
-                if norm_layer is not None:
-                    layers.append(norm_layer(hidden_dim))
-                layers.append(activation_layer(**params))
-                if dropout > 0:
-                    layers.append(torch.nn.Dropout(dropout, **params))
-                in_dim = hidden_dim
 
-        if norm_first:
+        for hidden_dim in hidden_channels[:-1]:
+            if norm_first and norm_layer is not None:
+                layers.append(norm_layer(in_dim))
+
+            layers.append(torch.nn.Linear(in_dim, hidden_dim, bias=bias))
+
+            if not norm_first and norm_layer is not None:
+                layers.append(norm_layer(hidden_dim))
+
+            layers.append(activation_layer(**params))
+
+            if dropout > 0:
+                layers.append(torch.nn.Dropout(dropout, **params))
+
+            in_dim = hidden_dim
+
+        if norm_first and norm_layer is not None:
             layers.append(norm_layer(in_dim))
+
         layers.append(torch.nn.Linear(in_dim, hidden_channels[-1], bias=bias))
         if dropout > 0:
             layers.append(torch.nn.Dropout(dropout, **params))

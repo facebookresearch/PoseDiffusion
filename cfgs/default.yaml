@@ -1,6 +1,7 @@
 image_folder: samples/apple
 image_size: 224
 ckpt: co3d_model0.pth
+seed: 0
 
 GGS:
     enable: True

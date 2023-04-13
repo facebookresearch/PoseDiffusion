@@ -77,7 +77,7 @@ class MultiScaleImageFeatureExtractor(nn.Module):
 
         if len(self.scale_factors) <= 0:
             raise ValueError(
-                f"Wrong format of self.scale_factors as {self.scale_factors}"
+                f"Wrong format of self.scale_factors: {self.scale_factors}"
             )
 
         for scale_factor in self.scale_factors:

@@ -20,7 +20,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
-from pytorch3d.ops import corresponding_cameras_alignment
+
+# from pytorch3d.ops import corresponding_cameras_alignment
 from pytorch3d.renderer.cameras import CamerasBase
 from pytorch3d.transforms import (
     se3_exp_map,
@@ -44,10 +45,15 @@ class PoseDiffusionModel(nn.Module):
         DIFFUSER: Dict,
         DENOISER: Dict,
     ):
+        """
+        Initializes a PoseDiffusion model.
+        
+        Args:
+            pose_encoding: defines the internal representation if extrinsics and intrinsics (i.e., the rotation `R`  and translation `t`, focal length).
+            Currently, only `"absT_quaR_logFL"` is supported - comprising a concatenation of the translation vector, rotation quaternion, and logarithm of focal length.
+        """
         super().__init__()
-        # pose_encoding defines the SE(3) matrix representation (i.e., [R t]) for optimization purposes.
-        # e.g., "absT_quaR_logFL" implies the usage of absolute translation, quaternion rotation,
-        # and logarithm of the focal length for the representation.
+
         self.pose_encoding = pose_encoding
 
         self.image_feature_extractor = instantiate(
@@ -69,8 +75,6 @@ class PoseDiffusionModel(nn.Module):
     ) -> Dict[str, Any]:
         z = self.image_feature_extractor(image)
 
-        # TODO: unsqueeze to be consistent with our original implementation
-        # remove this in the future
         z = z.unsqueeze(0)
 
         B, N, _ = z.shape

@@ -43,7 +43,6 @@ def main(cfg: DictConfig) -> None:
         print(f"Loaded checkpoint from: {ckpt_path}")
     else:
         raise ValueError(f"No checkpoint found at: {ckpt_path}")
-        return
 
     # Move to the GPU
     model = model.to(device)
@@ -52,7 +51,7 @@ def main(cfg: DictConfig) -> None:
     # Evaluation Mode
     model.eval()
 
-    seed_all_random_engines(0)
+    seed_all_random_engines(cfg.seed)
 
     # Start the timer
     start_time = time.time()
