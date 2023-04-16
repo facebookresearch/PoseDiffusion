@@ -5,26 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
-
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 import torch
+import torch.utils.data
 
-from pytorch3d.implicitron.dataset.frame_data import FrameData
 
-
-@dataclass(eq=False)
-class DatasetBase(torch.utils.data.Dataset[FrameData]):
+class DatasetBase(torch.utils.data.Dataset):
     """
-    Base class to describe a dataset to be used with Implicitron.
+    Base class to describe a dataset.
     The dataset is made up of frames, and the frames are grouped into sequences.
     Each sequence has a name (a string).
     (A sequence could be a video, or a set of images of one scene.)
@@ -32,18 +20,11 @@ class DatasetBase(torch.utils.data.Dataset[FrameData]):
     which will describe one frame in one sequence.
     """
 
-    # _seq_to_idx is a member which implementations can define.
-    # It maps sequence name to the sequence's global frame indices.
-    # It is used for the default implementations of some functions in this class.
-    # Implementations which override them are free to ignore it.
-    # _seq_to_idx: Dict[str, List[int]] = field(init=False)
-
     def __len__(self) -> int:
         raise NotImplementedError()
 
     def sequence_names(self) -> Iterable[str]:
         """Returns an iterator over sequence names in the dataset."""
-        # pyre-ignore[16]
         return self._seq_to_idx.keys()
 
     def category_to_sequence_names(self) -> Dict[str, List[str]]:
@@ -55,8 +36,9 @@ class DatasetBase(torch.utils.data.Dataset[FrameData]):
         """
         c2seq = defaultdict(list)
         for sequence_name in self.sequence_names():
-            first_frame_idx = next(self.sequence_indices_in_order(sequence_name))
-            # crashes without overriding __getitem__
+            first_frame_idx = next(
+                self.sequence_indices_in_order(sequence_name)
+            )
             sequence_category = self[first_frame_idx].sequence_category
             c2seq[sequence_category].append(sequence_name)
         return dict(c2seq)
@@ -75,7 +57,6 @@ class DatasetBase(torch.utils.data.Dataset[FrameData]):
                 `dataset_idx` is the index within the dataset.
                 `None` timestamps are replaced with 0s.
         """
-        # pyre-ignore[16]
         seq_frame_indices = self._seq_to_idx[seq_name]
         nos_timestamps = self.get_frame_numbers_and_timestamps(
             seq_frame_indices, subset_filter
@@ -84,7 +65,9 @@ class DatasetBase(torch.utils.data.Dataset[FrameData]):
         yield from sorted(
             [
                 (timestamp, frame_no, idx)
-                for idx, (frame_no, timestamp) in zip(seq_frame_indices, nos_timestamps)
+                for idx, (frame_no, timestamp) in zip(
+                    seq_frame_indices, nos_timestamps
+                )
             ]
         )
 

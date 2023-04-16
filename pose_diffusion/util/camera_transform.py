@@ -3,6 +3,7 @@ from pytorch3d.transforms.rotation_conversions import (
     matrix_to_quaternion,
     quaternion_to_matrix,
 )
+from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
 
 
 def pose_encoding_to_camera(
@@ -14,8 +15,10 @@ def pose_encoding_to_camera(
 ):
     """
     Args:
-        pose_encoding: A tensor of shape `BxNxC` containing a batch of `BxN` `C`-dimensional pose encodings.
-        pose_encoding_type: The type of pose encoding, only "absT_quaR_logFL" is supported.
+        pose_encoding: A tensor of shape `BxNxC`, containing a batch of
+                        `BxN` `C`-dimensional pose encodings.
+        pose_encoding_type: The type of pose encoding,
+                        only "absT_quaR_logFL" is supported.
     """
 
     batch_size, num_poses, _ = pose_encoding.shape
@@ -23,28 +26,17 @@ def pose_encoding_to_camera(
         -1, pose_encoding.shape[-1]
     )  # Reshape to BNxC
 
-    # forced to be 4x4 here
-    se3 = torch.zeros(
-        batch_size * num_poses,
-        4,
-        4,
-        dtype=pose_encoding.dtype,
-        device=pose_encoding.device,
-    )
-
     if pose_encoding_type == "absT_quaR_logFL":
         # forced that 3 for absT, 4 for quaR, 2 logFL
         # TODO: converted to 1 dim for logFL, consistent with our paper
         abs_T = pose_encoding_reshaped[:, :3]
         quaternion_R = pose_encoding_reshaped[:, 3:7]
         R = quaternion_to_matrix(quaternion_R)
-        se3[:, :3, :3] = R
-        se3[:, 3, :3] = abs_T
-        se3[:, 3, 3] = 1.0
 
         log_focal_length = pose_encoding_reshaped[:, 7:9]
-        # log_focal_length_bias was the hyperparameter to ensure the mean of logFL
-        # close to 0 during training
+
+        # log_focal_length_bias was the hyperparameter
+        # to ensure the mean of logFL close to 0 during training
         # Now converted back
         focal_length = (log_focal_length + log_focal_length_bias).exp()
 
@@ -55,7 +47,11 @@ def pose_encoding_to_camera(
     else:
         raise ValueError(f"Unknown pose encoding {pose_encoding_type}")
 
-    # Reshape se3 back to BxNx4x4
-    se3 = se3.reshape(batch_size, num_poses, 4, 4)
-    focal_length = focal_length.reshape(batch_size, num_poses, 2)
-    return se3, focal_length
+    pred_cameras = PerspectiveCameras(
+        focal_length=focal_length,
+        R=R,
+        T=abs_T,
+        device=R.device,
+    )
+
+    return pred_cameras

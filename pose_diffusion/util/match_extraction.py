@@ -80,27 +80,32 @@ def run_hloc(output_dir: str):
     features = outputs / "features.h5"
     matches = outputs / "matches.h5"
 
-    feature_conf = extract_features.confs["superpoint_inloc"]  # or superpoint_max
+    feature_conf = extract_features.confs[
+        "superpoint_inloc"
+    ]  # or superpoint_max
     matcher_conf = match_features.confs["superglue"]
 
     references = [
-        p.relative_to(images).as_posix() for p in (images / "mapping/").iterdir()
+        p.relative_to(images).as_posix()
+        for p in (images / "mapping/").iterdir()
     ]
 
     extract_features.main(
         feature_conf, images, image_list=references, feature_path=features
     )
     pairs_from_exhaustive.main(sfm_pairs, image_list=references)
-    match_features.main(matcher_conf, sfm_pairs, features=features, matches=matches)
+    match_features.main(
+        matcher_conf, sfm_pairs, features=features, matches=matches
+    )
 
-    matches, keypoints = compute_match_and_keypoint(
+    matches, keypoints = compute_matches_and_keypoints(
         sfm_dir, images, sfm_pairs, features, matches, image_list=references
     )
 
     return matches, keypoints
 
 
-def compute_match_and_keypoint(
+def compute_matches_and_keypoints(
     sfm_dir: Path,
     image_dir: Path,
     pairs: Path,
@@ -129,7 +134,10 @@ def compute_match_and_keypoint(
     db = COLMAPDatabase.connect(database)
 
     matches = dict(
-        (pair_id_to_image_ids(pair_id), _blob_to_array_safe(data, np.uint32, (-1, 2)))
+        (
+            pair_id_to_image_ids(pair_id),
+            _blob_to_array_safe(data, np.uint32, (-1, 2)),
+        )
         for pair_id, data in db.execute("SELECT pair_id, data FROM matches")
     )
 

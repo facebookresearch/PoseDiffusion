@@ -34,6 +34,7 @@ from util.camera_transform import pose_encoding_to_camera
 import models
 from hydra.utils import instantiate
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +48,7 @@ class PoseDiffusionModel(nn.Module):
     ):
         """
         Initializes a PoseDiffusion model.
-        
+
         Args:
             pose_encoding: defines the internal representation if extrinsics and intrinsics (i.e., the rotation `R`  and translation `t`, focal length).
             Currently, only `"absT_quaR_logFL"` is supported - comprising a concatenation of the translation vector, rotation quaternion, and logarithm of focal length.
@@ -81,11 +82,13 @@ class PoseDiffusionModel(nn.Module):
         target_shape = [B, N, self.target_dim]
 
         pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(
-            shape=target_shape, z=z, matches_dict=matches_dict,
+            shape=target_shape,
+            z=z,
+            matches_dict=matches_dict,
         )
 
-        pose, focal_length = pose_encoding_to_camera(
+        pred_cameras = pose_encoding_to_camera(
             pose_encoding, pose_encoding_type=self.pose_encoding
         )
 
-        return pose, focal_length
+        return pred_cameras

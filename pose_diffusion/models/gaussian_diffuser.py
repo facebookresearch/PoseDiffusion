@@ -61,7 +61,9 @@ def cosine_beta_schedule(timesteps, s=0.008):
     """
     steps = timesteps + 1
     x = torch.linspace(0, timesteps, steps, dtype=torch.float64)
-    alphas_cumprod = torch.cos(((x / timesteps) + s) / (1 + s) * math.pi * 0.5) ** 2
+    alphas_cumprod = (
+        torch.cos(((x / timesteps) + s) / (1 + s) * math.pi * 0.5) ** 2
+    )
     alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
     return torch.clip(betas, 0, 0.999)
@@ -128,7 +130,9 @@ class GaussianDiffusion(nn.Module):
         elif beta_schedule == "cosine":
             betas = cosine_beta_schedule(timesteps)
         elif beta_schedule == "custom":
-            betas = torch.linspace(beta_1, beta_T, timesteps, dtype=torch.float64)
+            betas = torch.linspace(
+                beta_1, beta_T, timesteps, dtype=torch.float64
+            )
         else:
             raise ValueError(f"unknown beta schedule {beta_schedule}")
 
@@ -161,8 +165,12 @@ class GaussianDiffusion(nn.Module):
         register_buffer(
             "sqrt_one_minus_alphas_cumprod", torch.sqrt(1.0 - alphas_cumprod)
         )
-        register_buffer("log_one_minus_alphas_cumprod", torch.log(1.0 - alphas_cumprod))
-        register_buffer("sqrt_recip_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod))
+        register_buffer(
+            "log_one_minus_alphas_cumprod", torch.log(1.0 - alphas_cumprod)
+        )
+        register_buffer(
+            "sqrt_recip_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod)
+        )
         register_buffer(
             "sqrt_recipm1_alphas_cumprod", torch.sqrt(1.0 / alphas_cumprod - 1)
         )
@@ -186,7 +194,9 @@ class GaussianDiffusion(nn.Module):
         )
         register_buffer(
             "posterior_mean_coef2",
-            (1.0 - alphas_cumprod_prev) * torch.sqrt(alphas) / (1.0 - alphas_cumprod),
+            (1.0 - alphas_cumprod_prev)
+            * torch.sqrt(alphas)
+            / (1.0 - alphas_cumprod),
         )
 
         # calculate p2 reweighting
@@ -218,13 +228,18 @@ class GaussianDiffusion(nn.Module):
         posterior_log_variance_clipped = extract(
             self.posterior_log_variance_clipped, t, x_t.shape
         )
-        return posterior_mean, posterior_variance, posterior_log_variance_clipped
+        return (
+            posterior_mean,
+            posterior_variance,
+            posterior_log_variance_clipped,
+        )
 
     def q_sample(self, x_start, t, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))
         return (
             extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
-            + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+            + extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
+            * noise
         )
 
     def model_predictions(self, x, t, z, x_self_cond=None):
@@ -257,9 +272,11 @@ class GaussianDiffusion(nn.Module):
                 "We don't clip the output because pose does not have a clear bound."
             )
 
-        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(
-            x_start=x_start, x_t=x, t=t
-        )
+        (
+            model_mean,
+            posterior_variance,
+            posterior_log_variance,
+        ) = self.q_posterior(x_start=x_start, x_t=x, t=t)
 
         return model_mean, posterior_variance, posterior_log_variance, x_start
 
@@ -274,7 +291,9 @@ class GaussianDiffusion(nn.Module):
         matches_dict: Optional[Dict] = None,
     ):
         b, *_, device = *x.shape, x.device
-        batched_times = torch.full((x.shape[0],), t, device=x.device, dtype=torch.long)
+        batched_times = torch.full(
+            (x.shape[0],), t, device=x.device, dtype=torch.long
+        )
         model_mean, _, model_log_variance, x_start = self.p_mean_variance(
             x=x,
             t=batched_times,
@@ -283,7 +302,10 @@ class GaussianDiffusion(nn.Module):
             clip_denoised=clip_denoised,
         )
 
-        if matches_dict["kp1"] is not None and t < matches_dict["GGS_cfg"].start_step:
+        if (
+            matches_dict["kp1"] is not None
+            and t < matches_dict["GGS_cfg"].start_step
+        ):
             model_mean = geometry_guided_sampling(model_mean, t, matches_dict)
             # skip noise if we use GGS at this sampling step
             noise = 0.0
@@ -295,7 +317,10 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(
-        self, shape, z: torch.Tensor, matches_dict: Optional[Dict] = None,
+        self,
+        shape,
+        z: torch.Tensor,
+        matches_dict: Optional[Dict] = None,
     ):
         batch, device = shape[0], self.betas.device
 
@@ -308,7 +333,12 @@ class GaussianDiffusion(nn.Module):
         pose_process.append(pose.unsqueeze(0))
 
         for t in reversed(range(0, self.num_timesteps)):
-            pose, _ = self.p_sample(x=pose, t=t, z=z, matches_dict=matches_dict,)
+            pose, _ = self.p_sample(
+                x=pose,
+                t=t,
+                z=z,
+                matches_dict=matches_dict,
+            )
             pose_process.append(pose.unsqueeze(0))
 
         return pose, torch.cat(pose_process)
@@ -320,7 +350,11 @@ class GaussianDiffusion(nn.Module):
         return sample_fn(shape, z=z, matches_dict=matches_dict)
 
     def p_losses(
-        self, x_start, t, z=None, noise=None,
+        self,
+        x_start,
+        t,
+        z=None,
+        noise=None,
     ):
         noise = default(noise, lambda: torch.randn_like(x_start))
         # noise sample
@@ -352,7 +386,9 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, pose, z=None, *args, **kwargs):
         b = len(pose)
-        t = torch.randint(0, self.num_timesteps, (b,), device=pose.device).long()
+        t = torch.randint(
+            0, self.num_timesteps, (b,), device=pose.device
+        ).long()
         return self.p_losses(pose, t, z=z, *args, **kwargs)
 
     @property

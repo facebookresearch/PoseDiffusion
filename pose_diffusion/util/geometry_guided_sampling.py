@@ -6,11 +6,13 @@ from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
 
 
 def geometry_guided_sampling(
-    model_mean: torch.Tensor, t: int, matches_dict=None,
+    model_mean: torch.Tensor,
+    t: int,
+    matches_dict=None,
 ):
     # pre-process matches
     b, c, h, w = matches_dict["img_shape"]
-    device = matches_dict["device"]
+    device = model_mean.device
 
     def _to_device(tensor):
         return torch.from_numpy(tensor).to(device)
@@ -27,7 +29,9 @@ def geometry_guided_sampling(
     kp1_homo = _to_homogeneous(kp1)
     kp2_homo = _to_homogeneous(kp2)
 
-    i1, i2 = [i.reshape(-1) for i in torch.meshgrid(torch.arange(b), torch.arange(b))]
+    i1, i2 = [
+        i.reshape(-1) for i in torch.meshgrid(torch.arange(b), torch.arange(b))
+    ]
 
     processed_matches = {
         "kp1_homo": kp1_homo,
@@ -45,13 +49,28 @@ def geometry_guided_sampling(
     model_mean = GGS_optimize(model_mean, t, processed_matches, GGS_cfg)
 
     model_mean = GGS_optimize(
-        model_mean, t, processed_matches, GGS_cfg, update_T=False, update_R=False
+        model_mean,
+        t,
+        processed_matches,
+        GGS_cfg,
+        update_T=False,
+        update_R=False,
     )  # only optimize FL
     model_mean = GGS_optimize(
-        model_mean, t, processed_matches, GGS_cfg, update_T=False, update_FL=False
+        model_mean,
+        t,
+        processed_matches,
+        GGS_cfg,
+        update_T=False,
+        update_FL=False,
     )  # only optimize R
     model_mean = GGS_optimize(
-        model_mean, t, processed_matches, GGS_cfg, update_R=False, update_FL=False
+        model_mean,
+        t,
+        processed_matches,
+        GGS_cfg,
+        update_R=False,
+        update_FL=False,
     )  # only optimize T
 
     model_mean = GGS_optimize(model_mean, t, processed_matches, GGS_cfg)
@@ -76,7 +95,9 @@ def GGS_optimize(
         if update_R and update_T and update_FL:
             iter_num = iter_num * 2
 
-        optimizer = torch.optim.SGD([model_mean], lr=learning_rate, momentum=0.9)
+        optimizer = torch.optim.SGD(
+            [model_mean], lr=learning_rate, momentum=0.9
+        )
         batch_size = model_mean.shape[1]
 
         for _ in range(iter_num):
@@ -93,7 +114,9 @@ def GGS_optimize(
             if GGS_cfg.min_matches > 0:
                 valid_match_per_frame = len(valid_sampson) / batch_size
                 if valid_match_per_frame < GGS_cfg.min_matches:
-                    print("Drop this pair because of insufficient valid matches")
+                    print(
+                        "Drop this pair because of insufficient valid matches"
+                    )
                     break
 
             loss = valid_sampson.mean()
@@ -124,16 +147,11 @@ def compute_sampson_distance(
     update_T=True,
     update_FL=True,
 ):
-    pose, focal_length = pose_encoding_to_camera(model_mean, GGS_cfg.pose_encoding_type)
-    pose = pose.squeeze(0)
-    focal_length = focal_length.squeeze(0)
-    focal_length = focal_length.mean(dim=0).repeat(len(focal_length), 1)
+    camera = pose_encoding_to_camera(model_mean, GGS_cfg.pose_encoding_type)
 
-    camera = PerspectiveCameras(
-        focal_length=focal_length,
-        R=pose[:, :3, :3],
-        T=pose[:, 3, :3],
-        device=pose.device,
+    # pick the mean of the predicted focal length
+    camera.focal_length = camera.focal_length.mean(dim=0).repeat(
+        len(camera.focal_length), 1
     )
 
     if not update_R:
@@ -146,10 +164,12 @@ def compute_sampson_distance(
         camera.focal_length = camera.focal_length.detach()
 
     kp1_homo, kp2_homo, i1, i2, he, wi, pair_idx = processed_matches.values()
-    F_2_to_1 = get_fundamental_matrices(camera, he, wi, i1, i2, normalize_to_one=False)
+    F_2_to_1 = get_fundamental_matrices(
+        camera, he, wi, i1, i2, normalize_to_one=False
+    )
     F = F_2_to_1.permute(0, 2, 1)  # y1^T F y2 = 0
 
-    def sampson_distance(F, kp1_homo, kp2_homo, pair_idx):
+    def _sampson_distance(F, kp1_homo, kp2_homo, pair_idx):
         left = torch.bmm(kp1_homo[:, None], F[pair_idx])
         right = torch.bmm(F[pair_idx], kp2_homo[..., None])
 
@@ -164,9 +184,16 @@ def compute_sampson_distance(
         sampson = top[:, 0] / bottom
         return sampson
 
-    sampson = sampson_distance(F, kp1_homo.float(), kp2_homo.float(), pair_idx,)
+    sampson = _sampson_distance(
+        F,
+        kp1_homo.float(),
+        kp2_homo.float(),
+        pair_idx,
+    )
 
-    sampson_to_print = sampson.detach().clone().clamp(max=GGS_cfg.sampson_max).mean()
+    sampson_to_print = (
+        sampson.detach().clone().clamp(max=GGS_cfg.sampson_max).mean()
+    )
     sampson = sampson[sampson < GGS_cfg.sampson_max]
 
     return sampson, sampson_to_print

@@ -18,7 +18,9 @@ def get_fundamental_matrices(
 
     # Convert to opencv / colmap / Hartley&Zisserman convention
     image_size_t = (
-        torch.LongTensor([height, width])[None].repeat(batch_size, 1).to(camera.device)
+        torch.LongTensor([height, width])[None]
+        .repeat(batch_size, 1)
+        .to(camera.device)
     )
     R, t, K = opencv_from_cameras_projection(camera, image_size=image_size_t)
 

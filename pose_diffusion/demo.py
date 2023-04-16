@@ -31,7 +31,9 @@ def main(cfg: DictConfig) -> None:
     model = instantiate(cfg.MODEL, _recursive_=False)
 
     # Loading Image
-    original_cwd = get_original_cwd()  # hydra changes the default path, goes back
+    original_cwd = (
+        get_original_cwd()
+    )  # hydra changes the default path, goes back
     folder_path = os.path.join(original_cwd, cfg.image_folder)
     images, image_info = load_and_preprocess_images(folder_path, cfg.image_size)
 
@@ -62,12 +64,12 @@ def main(cfg: DictConfig) -> None:
 
         kp1, kp2, i12 = extract_match(folder_path, image_info)
         cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding
-        keys = ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]
-        values = [kp1, kp2, i12, images.shape, device, cfg.GGS]
+        keys = ["kp1", "kp2", "i12", "img_shape", "GGS_cfg"]
+        values = [kp1, kp2, i12, images.shape, cfg.GGS]
         matches_dict = dict(zip(keys, values))
     else:
         matches_dict = {
-            key: None for key in ["kp1", "kp2", "i12", "img_shape", "device", "GGS_cfg"]
+            key: None for key in ["kp1", "kp2", "i12", "img_shape", "GGS_cfg"]
         }
         matches_dict["GGS_cfg"] = cfg.GGS
 
@@ -79,13 +81,14 @@ def main(cfg: DictConfig) -> None:
         # The poses and focal length are defined as
         # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
-        pred_pose, pred_focal_length = model(image=images, matches_dict=matches_dict)
+        pred_cameras = model(image=images, matches_dict=matches_dict)
 
     print(
-        f"For samples/apple: the std of pred_pose is {pred_pose.std():.6f}, which should be close to 0.673024"
+        f"For samples/apple: the std of pred_cameras.R is {pred_cameras.R.std():.6f}, which should be close to 0.564747"
     )
+
     print(
-        f"For samples/apple: the mean of pred_pose is {pred_pose.mean():.6f}, which should be close to 0.208234"
+        f"For samples/apple: the std of pred_cameras.T is {pred_cameras.T.mean():.6f}, which should be close to 0.395809"
     )
 
     # End the timer

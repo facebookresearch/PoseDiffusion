@@ -60,7 +60,9 @@ class Denoiser(nn.Module):
 
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
-            d_model, [mlp_hidden_dim, self.target_dim], norm_layer=nn.LayerNorm,
+            d_model,
+            [mlp_hidden_dim, self.target_dim],
+            norm_layer=nn.LayerNorm,
         )
 
     def forward(
@@ -112,7 +114,9 @@ class MLP(torch.nn.Sequential):
         in_channels: int,
         hidden_channels: List[int],
         norm_layer: Optional[Callable[..., torch.nn.Module]] = None,
-        activation_layer: Optional[Callable[..., torch.nn.Module]] = torch.nn.ReLU,
+        activation_layer: Optional[
+            Callable[..., torch.nn.Module]
+        ] = torch.nn.ReLU,
         inplace: Optional[bool] = True,
         bias: bool = True,
         norm_first: bool = False,

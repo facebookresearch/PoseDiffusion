@@ -52,7 +52,6 @@ def load_and_preprocess_images(
     # assume all the images have the same shape for GGS
     image_info = {
         "size": (min_hw, min_hw),
-        "shape_ori": image.shape,
         "bboxes_xyxy": np.stack(bboxes_xyxy),
         "resized_scales": np.stack(scales),
     }
@@ -82,12 +81,19 @@ def _center_crop_square(image: np.ndarray) -> np.ndarray:
 
     # the format from xywh to xyxy
     bbox_xyxy = _clamp_box_to_image_bounds_and_round(
-        _get_clamp_bbox(bbox_xywh, box_crop_context=0.0,), image_size_hw=(h, w),
+        _get_clamp_bbox(
+            bbox_xywh,
+            box_crop_context=0.0,
+        ),
+        image_size_hw=(h, w),
     )
     return cropped_image, bbox_xyxy, min_dim
 
 
-def _get_clamp_bbox(bbox: torch.Tensor, box_crop_context: float = 0.0,) -> torch.Tensor:
+def _get_clamp_bbox(
+    bbox: torch.Tensor,
+    box_crop_context: float = 0.0,
+) -> torch.Tensor:
     # box_crop_context: rate of expansion for bbox
     # returns possibly expanded bbox xyxy as float
 
@@ -103,9 +109,13 @@ def _get_clamp_bbox(bbox: torch.Tensor, box_crop_context: float = 0.0,) -> torch
         bbox[3] += bbox[3] * c
 
     if (bbox[2:] <= 1.0).any():
-        raise ValueError(f"squashed image!! The bounding box contains no pixels.")
+        raise ValueError(
+            f"squashed image!! The bounding box contains no pixels."
+        )
 
-    bbox[2:] = torch.clamp(bbox[2:], 2)  # set min height, width to 2 along both axes
+    bbox[2:] = torch.clamp(
+        bbox[2:], 2
+    )  # set min height, width to 2 along both axes
     bbox_xyxy = _bbox_xywh_to_xyxy(bbox, clamp_size=2)
 
     return bbox_xyxy
@@ -122,7 +132,8 @@ def _bbox_xywh_to_xyxy(
 
 
 def _clamp_box_to_image_bounds_and_round(
-    bbox_xyxy: torch.Tensor, image_size_hw: Tuple[int, int],
+    bbox_xyxy: torch.Tensor,
+    image_size_hw: Tuple[int, int],
 ) -> torch.LongTensor:
     bbox_xyxy = bbox_xyxy.clone()
     bbox_xyxy[[0, 2]] = torch.clamp(bbox_xyxy[[0, 2]], 0, image_size_hw[-1])
