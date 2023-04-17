@@ -8,7 +8,8 @@ from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
 def geometry_guided_sampling(
     model_mean: torch.Tensor,
     t: int,
-    matches_dict=None,
+    matches_dict: Dict,
+    GGS_cfg: Dict,
 ):
     # pre-process matches
     b, c, h, w = matches_dict["img_shape"]
@@ -43,37 +44,41 @@ def geometry_guided_sampling(
         "pair_idx": pair_idx,
     }
 
-    # GGS
-    GGS_cfg = matches_dict["GGS_cfg"]
+    # conduct GGS
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
 
-    model_mean = GGS_optimize(model_mean, t, processed_matches, GGS_cfg)
-
+    # Optimize FL, R, and T separately
     model_mean = GGS_optimize(
         model_mean,
         t,
         processed_matches,
-        GGS_cfg,
         update_T=False,
         update_R=False,
+        update_FL=True, 
+        **GGS_cfg,
     )  # only optimize FL
+    
     model_mean = GGS_optimize(
         model_mean,
         t,
         processed_matches,
-        GGS_cfg,
         update_T=False,
+        update_R=True,
         update_FL=False,
+        **GGS_cfg,
     )  # only optimize R
+    
     model_mean = GGS_optimize(
         model_mean,
         t,
         processed_matches,
-        GGS_cfg,
+        update_T=True,
         update_R=False,
         update_FL=False,
+        **GGS_cfg,
     )  # only optimize T
 
-    model_mean = GGS_optimize(model_mean, t, processed_matches, GGS_cfg)
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
     return model_mean
 
 
@@ -81,16 +86,20 @@ def GGS_optimize(
     model_mean: torch.Tensor,
     t: int,
     processed_matches: Dict,
-    GGS_cfg: Optional[Dict] = None,
     update_R: bool = True,
     update_T: bool = True,
     update_FL: bool = True,
-):
+    # the args below come from **GGS_cfg
+    alpha: float = 0.0001,
+    learning_rate: float = 1e-2,
+    iter_num: int = 100,
+    sampson_max: int = 10,
+    min_matches: int = 10,
+    pose_encoding_type: str = "absT_quaR_logFL",
+    **kwargs,
+):    
     with torch.enable_grad():
         model_mean.requires_grad_(True)
-
-        learning_rate = GGS_cfg.lr
-        iter_num = GGS_cfg.iter_num
 
         if update_R and update_T and update_FL:
             iter_num = iter_num * 2
@@ -105,15 +114,16 @@ def GGS_optimize(
                 model_mean,
                 t,
                 processed_matches,
-                GGS_cfg=GGS_cfg,
                 update_R=update_R,
                 update_T=update_T,
                 update_FL=update_FL,
+                pose_encoding_type=pose_encoding_type,
+                sampson_max=sampson_max,
             )
 
-            if GGS_cfg.min_matches > 0:
+            if min_matches > 0:
                 valid_match_per_frame = len(valid_sampson) / batch_size
-                if valid_match_per_frame < GGS_cfg.min_matches:
+                if valid_match_per_frame < min_matches:
                     print(
                         "Drop this pair because of insufficient valid matches"
                     )
@@ -128,7 +138,7 @@ def GGS_optimize(
             grad_mask = (grads.abs() > 0).detach()
             model_mean_norm = (model_mean * grad_mask).norm()
 
-            max_norm = GGS_cfg.alpha * model_mean_norm / learning_rate
+            max_norm = alpha * model_mean_norm / learning_rate
 
             total_norm = torch.nn.utils.clip_grad_norm_(model_mean, max_norm)
             optimizer.step()
@@ -142,12 +152,13 @@ def compute_sampson_distance(
     model_mean: torch.Tensor,
     t: int,
     processed_matches: Dict,
-    GGS_cfg: Dict,
     update_R=True,
     update_T=True,
     update_FL=True,
+    pose_encoding_type: str = "absT_quaR_logFL",
+    sampson_max: int = 10,
 ):
-    camera = pose_encoding_to_camera(model_mean, GGS_cfg.pose_encoding_type)
+    camera = pose_encoding_to_camera(model_mean, pose_encoding_type)
 
     # pick the mean of the predicted focal length
     camera.focal_length = camera.focal_length.mean(dim=0).repeat(
@@ -165,7 +176,7 @@ def compute_sampson_distance(
 
     kp1_homo, kp2_homo, i1, i2, he, wi, pair_idx = processed_matches.values()
     F_2_to_1 = get_fundamental_matrices(
-        camera, he, wi, i1, i2, normalize_to_one=False
+        camera, he, wi, i1, i2, l2_normalize_F=False
     )
     F = F_2_to_1.permute(0, 2, 1)  # y1^T F y2 = 0
 
@@ -192,8 +203,8 @@ def compute_sampson_distance(
     )
 
     sampson_to_print = (
-        sampson.detach().clone().clamp(max=GGS_cfg.sampson_max).mean()
+        sampson.detach().clone().clamp(max = sampson_max).mean()
     )
-    sampson = sampson[sampson < GGS_cfg.sampson_max]
+    sampson = sampson[sampson < sampson_max]
 
     return sampson, sampson_to_print

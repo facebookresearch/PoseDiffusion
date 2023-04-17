@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class PoseDiffusionModel(nn.Module):
     def __init__(
         self,
-        pose_encoding: str,
+        pose_encoding_type: str,
         IMAGE_FEATURE_EXTRACTOR: Dict,
         DIFFUSER: Dict,
         DENOISER: Dict,
@@ -50,12 +50,12 @@ class PoseDiffusionModel(nn.Module):
         Initializes a PoseDiffusion model.
 
         Args:
-            pose_encoding: defines the internal representation if extrinsics and intrinsics (i.e., the rotation `R`  and translation `t`, focal length).
+            pose_encoding_type: defines the internal representation if extrinsics and intrinsics (i.e., the rotation `R`  and translation `t`, focal length).
             Currently, only `"absT_quaR_logFL"` is supported - comprising a concatenation of the translation vector, rotation quaternion, and logarithm of focal length.
         """
         super().__init__()
 
-        self.pose_encoding = pose_encoding
+        self.pose_encoding_type = pose_encoding_type
 
         self.image_feature_extractor = instantiate(
             IMAGE_FEATURE_EXTRACTOR, _recursive_=False
@@ -72,7 +72,8 @@ class PoseDiffusionModel(nn.Module):
         image: torch.Tensor,
         camera: Optional[CamerasBase] = None,
         sequence_name: Optional[List[str]] = None,
-        matches_dict: Optional[Dict] = None,
+        cond_fn = None,
+        cond_start_step = 0,
     ) -> Dict[str, Any]:
         z = self.image_feature_extractor(image)
 
@@ -84,11 +85,12 @@ class PoseDiffusionModel(nn.Module):
         pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(
             shape=target_shape,
             z=z,
-            matches_dict=matches_dict,
+            cond_fn=cond_fn,
+            cond_start_step=cond_start_step,
         )
 
         pred_cameras = pose_encoding_to_camera(
-            pose_encoding, pose_encoding_type=self.pose_encoding
+            pose_encoding, pose_encoding_type=self.pose_encoding_type
         )
 
         return pred_cameras

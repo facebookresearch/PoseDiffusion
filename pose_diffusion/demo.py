@@ -16,6 +16,8 @@ from util.match_extraction import extract_match
 from util.load_img_folder import load_and_preprocess_images
 import models
 import time
+from util.geometry_guided_sampling import geometry_guided_sampling
+from functools import partial
 
 
 @hydra.main(config_path="../cfgs/", config_name="default")
@@ -63,15 +65,18 @@ def main(cfg: DictConfig) -> None:
         # TODO Optional: remove the keypoints outside the cropped region?
 
         kp1, kp2, i12 = extract_match(folder_path, image_info)
-        cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding
-        keys = ["kp1", "kp2", "i12", "img_shape", "GGS_cfg"]
-        values = [kp1, kp2, i12, images.shape, cfg.GGS]
+
+        keys = ["kp1", "kp2", "i12", "img_shape"]
+        values = [kp1, kp2, i12, images.shape]
         matches_dict = dict(zip(keys, values))
+
+        cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type        
+        GGS_cfg = OmegaConf.to_container(cfg.GGS)
+        
+        # I am not really sure it is best to introduce partial() here
+        cond_fn = partial(geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg)        
     else:
-        matches_dict = {
-            key: None for key in ["kp1", "kp2", "i12", "img_shape", "GGS_cfg"]
-        }
-        matches_dict["GGS_cfg"] = cfg.GGS
+        cond_fn = None
 
     # Forward
     with torch.no_grad():
@@ -81,7 +86,7 @@ def main(cfg: DictConfig) -> None:
         # The poses and focal length are defined as
         # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
-        pred_cameras = model(image=images, matches_dict=matches_dict)
+        pred_cameras = model(image=images, cond_fn=cond_fn, cond_start_step=cfg.GGS.start_step)
 
     print(
         f"For samples/apple: the std of pred_cameras.R is {pred_cameras.R.std():.6f}, which should be close to 0.564747"

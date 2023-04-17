@@ -11,7 +11,7 @@ def get_fundamental_matrices(
     width: int,
     index1: torch.LongTensor,
     index2: torch.LongTensor,
-    normalize_to_one=False,
+    l2_normalize_F=False,
 ):
     """Compute fundamental matrices for given camera parameters."""
     batch_size = camera.R.shape[0]
@@ -28,7 +28,7 @@ def get_fundamental_matrices(
         K[index1], R[index1], t[index1], K[index2], R[index2], t[index2]
     )
 
-    if normalize_to_one:
+    if l2_normalize_F:
         F_scale = torch.norm(F, dim=(1, 2))
         F_scale = F_scale.clamp(min=0.0001)
         F = F / F_scale[:, None, None]

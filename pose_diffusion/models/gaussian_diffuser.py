@@ -22,7 +22,6 @@ from einops.layers.torch import Rearrange
 from PIL import Image
 from tqdm.auto import tqdm
 from typing import Any, Dict, List, Optional, Tuple, Union
-from util.geometry_guided_sampling import geometry_guided_sampling
 
 # constants
 
@@ -288,7 +287,8 @@ class GaussianDiffusion(nn.Module):
         z: torch.Tensor,
         x_self_cond=None,
         clip_denoised=False,
-        matches_dict: Optional[Dict] = None,
+        cond_fn = None,
+        cond_start_step=0, 
     ):
         b, *_, device = *x.shape, x.device
         batched_times = torch.full(
@@ -302,12 +302,8 @@ class GaussianDiffusion(nn.Module):
             clip_denoised=clip_denoised,
         )
 
-        if (
-            matches_dict["kp1"] is not None
-            and t < matches_dict["GGS_cfg"].start_step
-        ):
-            model_mean = geometry_guided_sampling(model_mean, t, matches_dict)
-            # skip noise if we use GGS at this sampling step
+        if cond_fn is not None and t < cond_start_step:
+            model_mean = cond_fn(model_mean, t)
             noise = 0.0
         else:
             noise = torch.randn_like(x) if t > 0 else 0.0  # no noise if t == 0
@@ -320,7 +316,8 @@ class GaussianDiffusion(nn.Module):
         self,
         shape,
         z: torch.Tensor,
-        matches_dict: Optional[Dict] = None,
+        cond_fn=None,
+        cond_start_step=0,
     ):
         batch, device = shape[0], self.betas.device
 
@@ -337,17 +334,18 @@ class GaussianDiffusion(nn.Module):
                 x=pose,
                 t=t,
                 z=z,
-                matches_dict=matches_dict,
+                cond_fn=cond_fn,
+                cond_start_step=cond_start_step,
             )
             pose_process.append(pose.unsqueeze(0))
 
         return pose, torch.cat(pose_process)
 
     @torch.no_grad()
-    def sample(self, shape, z, matches_dict=None):
+    def sample(self, shape, z, cond_fn=None, cond_start_step=0):
         # TODO: add more variants
         sample_fn = self.p_sample_loop
-        return sample_fn(shape, z=z, matches_dict=matches_dict)
+        return sample_fn(shape, z=z, cond_fn=cond_fn, cond_start_step=cond_start_step)
 
     def p_losses(
         self,
