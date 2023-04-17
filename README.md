@@ -1,5 +1,7 @@
 # PoseDiffusion: Solving Pose Estimation via Diffusion-aided Bundle Adjustment
 
+## Please be aware that the latest code updates are now being pushed to the 'dev' branch.
+
 Please refer to [pixar_replay](https://github.com/fairinternal/pixar_replay) for the installation instruction.
 
 The ckpt is available in [dropbox](https://www.dropbox.com/s/unsgup5yu2pmusk/co3d_model0.pth?dl=0).
