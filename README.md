@@ -61,15 +61,12 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 
 
 
-
+<!-- 
 ## Wait a Second
 - [ ] Non Rigid
 - [ ] Unsupervised
 - [ ] Large Model (Ongoing)
-
-
-
-
+ -->
 
 
 
