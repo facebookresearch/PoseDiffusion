@@ -8,7 +8,7 @@ import logging
 from collections import defaultdict
 from dataclasses import field, dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable
-
+from util.embedding import TimeStepEmbedding, PoseEmbedding
 
 import torch
 import torch.nn as nn
@@ -23,40 +23,33 @@ class Denoiser(nn.Module):
     def __init__(
         self,
         TRANSFORMER: Dict,
-        target_dim: int = 9,  # TODO: fl dim from 2 to 1
+        target_dim: int = 9,  # TODO: reduce fl dim from 2 to 1
         pivot_cam_onehot: bool = True,
         z_dim: int = 384,
         mlp_hidden_dim: bool = 128,
-        time_multiplier: float = 0.01,
-        proj_dim: int = 96,
     ):
         super().__init__()
 
         self.pivot_cam_onehot = pivot_cam_onehot
         self.target_dim = target_dim
-        self.time_multiplier = time_multiplier
 
-        self.proj_xt = torch.nn.Linear(self.target_dim + 1, proj_dim)
+        self.time_embed = TimeStepEmbedding()
+        self.pose_embed = PoseEmbedding(target_dim=self.target_dim)
 
         first_dim = (
-            self.target_dim
+            self.time_embed.out_dim
+            + self.pose_embed.out_dim
             + z_dim
-            + proj_dim
             + int(self.pivot_cam_onehot)
-            + 1  # 1 dim for timestep t
         )
 
         d_model = TRANSFORMER.d_model
-        # TODO: rename _first, _trunk, and _last
         self._first = nn.Linear(first_dim, d_model)
 
+        # slightly different from the paper that we use 2 encoder layers and 6 decoder layers
+        # here we use a transformer with 8 encoder layers
+        # call TransformerEncoderWrapper() to build a encoder-only transformer
         self._trunk = instantiate(TRANSFORMER, _recursive_=False)
-        # The usage of instantiate here is the same as:
-        # self._trunk = torch.nn.Transformer(
-        #     d_model=TRANSFORMER.d_model,
-        #     ...
-        #     norm_first=TRANSFORMER.norm_first,
-        # )
 
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
@@ -67,14 +60,17 @@ class Denoiser(nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor,  # B x N_x x dim
+        x: torch.Tensor,  # B x N x dim
         t: torch.Tensor,  # B
-        z: torch.Tensor,  # B x N_z x dim_z
+        z: torch.Tensor,  # B x N x dim_z
     ):
-        B, N, Xdim = x.shape
+        B, N, _ = x.shape
 
-        # expand t from B to B x N_x x 1
-        t_expand = (t * self.time_multiplier).view(B, 1, 1).expand(-1, N, -1)
+        t_emb = self.time_embed(t)
+        # expand t from B x C to B x N x C
+        t_emb = t_emb.view(B, 1, t_emb.shape[-1]).expand(-1, N, -1)
+
+        x_emb = self.pose_embed(x)
 
         if self.pivot_cam_onehot:
             # add the one hot vector identifying the first camera as pivot
@@ -82,18 +78,37 @@ class Denoiser(nn.Module):
             cam_pivot_id[:, 0, ...] = 1.0
             z = torch.cat([z, cam_pivot_id], dim=-1)
 
-        # projection
-        xt = self.proj_xt(torch.cat([x, t_expand], dim=-1))
-        feed_feats = torch.cat([x, t_expand, xt, z], dim=-1)
+        feed_feats = torch.cat([x_emb, t_emb, z], dim=-1)
 
         input_ = self._first(feed_feats)
 
-        feats_ = self._trunk(input_, input_)
+        feats_ = self._trunk(input_)
 
-        featdim = feats_.shape[-1]
-        output = self._last(feats_.reshape(-1, featdim)).reshape(B, N, -1)
+        output = self._last(feats_)
 
         return output
+
+
+def TransformerEncoderWrapper(
+    d_model: int,
+    nhead: int,
+    num_encoder_layers: int,
+    dim_feedforward: int = 2048,
+    dropout: float = 0.1,
+    norm_first: bool = True,
+    batch_first: bool = True,
+):
+    encoder_layer = torch.nn.TransformerEncoderLayer(
+        d_model=d_model,
+        nhead=nhead,
+        dim_feedforward=dim_feedforward,
+        dropout=dropout,
+        batch_first=batch_first,
+        norm_first=norm_first,
+    )
+
+    _trunk = torch.nn.TransformerEncoder(encoder_layer, num_encoder_layers)
+    return _trunk
 
 
 class MLP(torch.nn.Sequential):

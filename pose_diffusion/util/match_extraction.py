@@ -27,9 +27,18 @@ from hloc.utils.database import (
 
 
 def extract_match(image_folder_path: str, image_info: Dict):
-    # Now support SPSG
+    # Now only supports SPSG
     with tempfile.TemporaryDirectory() as tmpdir:
-        shutil.copytree(image_folder_path, os.path.join(tmpdir, "mapping"))
+        tmp_mapping = os.path.join(tmpdir, "mapping")
+        os.makedirs(tmp_mapping)
+        for filename in os.listdir(image_folder_path):
+            if filename.lower().endswith(
+                (".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")
+            ):
+                shutil.copy(
+                    os.path.join(image_folder_path, filename),
+                    os.path.join(tmp_mapping, filename),
+                )
         matches, keypoints = run_hloc(tmpdir)
 
     # From the format of colmap to PyTorch3D

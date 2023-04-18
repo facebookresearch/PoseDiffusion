@@ -1,10 +1,10 @@
 image_folder: samples/apple
 image_size: 224
-ckpt: co3d_model0.pth
+ckpt: co3d_model1.pth
 seed: 0
 
 GGS:
-    enable: True
+    enable: False
     start_step: 10
     learning_rate: 0.01
     iter_num: 100
@@ -25,12 +25,11 @@ MODEL:
     DENOISER: 
         _target_: models.Denoiser
         TRANSFORMER:
-            _target_:               torch.nn.Transformer
+            _target_:               models.TransformerEncoderWrapper
             d_model:                512
             nhead:                  4
             dim_feedforward:        1024
-            num_encoder_layers:     2
-            num_decoder_layers:     6
+            num_encoder_layers:     8
             dropout:                0.1
             batch_first:            True
             norm_first:             True

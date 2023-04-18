@@ -287,8 +287,8 @@ class GaussianDiffusion(nn.Module):
         z: torch.Tensor,
         x_self_cond=None,
         clip_denoised=False,
-        cond_fn = None,
-        cond_start_step=0, 
+        cond_fn=None,
+        cond_start_step=0,
     ):
         b, *_, device = *x.shape, x.device
         batched_times = torch.full(
@@ -345,7 +345,9 @@ class GaussianDiffusion(nn.Module):
     def sample(self, shape, z, cond_fn=None, cond_start_step=0):
         # TODO: add more variants
         sample_fn = self.p_sample_loop
-        return sample_fn(shape, z=z, cond_fn=cond_fn, cond_start_step=cond_start_step)
+        return sample_fn(
+            shape, z=z, cond_fn=cond_fn, cond_start_step=cond_start_step
+        )
 
     def p_losses(
         self,

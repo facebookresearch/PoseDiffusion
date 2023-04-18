@@ -54,10 +54,10 @@ def geometry_guided_sampling(
         processed_matches,
         update_T=False,
         update_R=False,
-        update_FL=True, 
+        update_FL=True,
         **GGS_cfg,
     )  # only optimize FL
-    
+
     model_mean = GGS_optimize(
         model_mean,
         t,
@@ -67,7 +67,7 @@ def geometry_guided_sampling(
         update_FL=False,
         **GGS_cfg,
     )  # only optimize R
-    
+
     model_mean = GGS_optimize(
         model_mean,
         t,
@@ -97,7 +97,7 @@ def GGS_optimize(
     min_matches: int = 10,
     pose_encoding_type: str = "absT_quaR_logFL",
     **kwargs,
-):    
+):
     with torch.enable_grad():
         model_mean.requires_grad_(True)
 
@@ -202,9 +202,7 @@ def compute_sampson_distance(
         pair_idx,
     )
 
-    sampson_to_print = (
-        sampson.detach().clone().clamp(max = sampson_max).mean()
-    )
+    sampson_to_print = sampson.detach().clone().clamp(max=sampson_max).mean()
     sampson = sampson[sampson < sampson_max]
 
     return sampson, sampson_to_print

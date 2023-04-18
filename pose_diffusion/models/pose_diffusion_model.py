@@ -72,8 +72,8 @@ class PoseDiffusionModel(nn.Module):
         image: torch.Tensor,
         camera: Optional[CamerasBase] = None,
         sequence_name: Optional[List[str]] = None,
-        cond_fn = None,
-        cond_start_step = 0,
+        cond_fn=None,
+        cond_start_step=0,
     ) -> Dict[str, Any]:
         z = self.image_feature_extractor(image)
 
