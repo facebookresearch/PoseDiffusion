@@ -33,17 +33,15 @@ def main(cfg: DictConfig) -> None:
     # Check for GPU availability and set the device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Model Construction
+    # Instantiate the model
     model = instantiate(cfg.MODEL, _recursive_=False)
 
-    # Loading Image
-    original_cwd = (
-        get_original_cwd()
-    )  # hydra changes the default path, goes back
+    # Load and preprocess images
+    original_cwd = get_original_cwd()  # Get original working directory
     folder_path = os.path.join(original_cwd, cfg.image_folder)
     images, image_info = load_and_preprocess_images(folder_path, cfg.image_size)
 
-    # Load the pre-set checkpoint
+    # Load checkpoint
     ckpt_path = os.path.join(original_cwd, cfg.ckpt)
     if os.path.isfile(ckpt_path):
         checkpoint = torch.load(ckpt_path, map_location=device)
@@ -52,21 +50,22 @@ def main(cfg: DictConfig) -> None:
     else:
         raise ValueError(f"No checkpoint found at: {ckpt_path}")
 
-    # Move to the GPU
+    # Move model and images to the GPU
     model = model.to(device)
     images = images.to(device)
 
     # Evaluation Mode
     model.eval()
 
+    # Seed random engines
     seed_all_random_engines(cfg.seed)
 
     # Start the timer
     start_time = time.time()
 
-    # Match extraction
+    # Perform match extraction
     if cfg.GGS.enable:
-        # TODO Optional: remove the keypoints outside the cropped region?
+        # Optional TODO: remove the keypoints outside the cropped region?
 
         kp1, kp2, i12 = extract_match(folder_path, image_info)
 
@@ -77,7 +76,6 @@ def main(cfg: DictConfig) -> None:
         cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type
         GGS_cfg = OmegaConf.to_container(cfg.GGS)
 
-        # I am not really sure it is best to introduce partial() here
         cond_fn = partial(
             geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg
         )
@@ -86,8 +84,9 @@ def main(cfg: DictConfig) -> None:
 
     # Forward
     with torch.no_grad():
-        # pred_pose: (B,N,4,4)
-        # pred_fl:   (B,N,2)
+        # Obtain predicted camera parameters (rotation, translation, and focal length)
+        # pred_cameras is a PerspectiveCameras object with attributes
+        # pred_cameras.R, pred_cameras.T, pred_cameras.focal_length
 
         # The poses and focal length are defined as
         # NDC coordinate system in
@@ -96,7 +95,7 @@ def main(cfg: DictConfig) -> None:
             image=images, cond_fn=cond_fn, cond_start_step=cfg.GGS.start_step
         )
 
-    # End the timer
+    # Stop the timer and calculate elapsed time
     end_time = time.time()
     elapsed_time = end_time - start_time
     print("Time taken: {:.4f} seconds".format(elapsed_time))
@@ -119,11 +118,11 @@ def main(cfg: DictConfig) -> None:
         eps=1e-4,
     )
 
-    # Absolute rotation error
+    # Compute the absolute rotation error
     ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
 
     print(f"For samples/apple: the absolute rotation error is {ARE:.6f}.")
-    print(f"Without GGS, it should be smaller than 3.25 degress.")
+    print(f"Without GGS, it should be smaller than 3.20 degress.")
     print(f"With GGS, it should be smaller than 2.16 degress.")
 
 

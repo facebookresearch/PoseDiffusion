@@ -5,12 +5,12 @@
 
 Please refer to [pixar_replay](https://github.com/fairinternal/pixar_replay) for the installation instruction.
 
-The ckpt is available in [dropbox](https://www.dropbox.com/s/p1wluvs59sepzyt/co3d_model1.pth?dl=0).
+The ckpt is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0).
 
 Example usage:
 
 ```.bash
-python demo.py image_folder="samples/apple" ckpt="co3d_model1.pth"
+python demo.py image_folder="samples/apple" ckpt="co3d_model.pth"
 ```
 
 By a Quadro GP100 GPU on FAIR cluster, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds (including the time of 20-seconds matching extration).
