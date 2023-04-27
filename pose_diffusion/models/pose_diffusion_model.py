@@ -21,7 +21,6 @@ import torch
 import torch.nn as nn
 from PIL import Image
 
-# from pytorch3d.ops import corresponding_cameras_alignment
 from pytorch3d.renderer.cameras import CamerasBase
 from pytorch3d.transforms import (
     se3_exp_map,
@@ -33,6 +32,7 @@ from util.camera_transform import pose_encoding_to_camera
 
 import models
 from hydra.utils import instantiate
+from pytorch3d.renderer.cameras import PerspectiveCameras
 
 
 logger = logging.getLogger(__name__)
@@ -46,13 +46,22 @@ class PoseDiffusionModel(nn.Module):
         DIFFUSER: Dict,
         DENOISER: Dict,
     ):
-        """
-        Initializes a PoseDiffusion model.
+        """Initializes a PoseDiffusion model.
 
         Args:
-            pose_encoding_type: defines the internal representation if extrinsics and intrinsics (i.e., the rotation `R`  and translation `t`, focal length).
-            Currently, only `"absT_quaR_logFL"` is supported - comprising a concatenation of the translation vector, rotation quaternion, and logarithm of focal length.
+            pose_encoding_type (str):
+                Defines the encoding type for extrinsics and intrinsics
+                Currently, only `"absT_quaR_logFL"` is supported -
+                a concatenation of the translation vector,
+                rotation quaternion, and logarithm of focal length.
+            image_feature_extractor_cfg (Dict):
+                Configuration for the image feature extractor.
+            diffuser_cfg (Dict):
+                Configuration for the diffuser.
+            denoiser_cfg (Dict):
+                Configuration for the denoiser.
         """
+
         super().__init__()
 
         self.pose_encoding_type = pose_encoding_type
@@ -70,11 +79,30 @@ class PoseDiffusionModel(nn.Module):
     def forward(
         self,
         image: torch.Tensor,
-        camera: Optional[CamerasBase] = None,
+        gt_cameras: Optional[CamerasBase] = None,
         sequence_name: Optional[List[str]] = None,
         cond_fn=None,
         cond_start_step=0,
-    ) -> Dict[str, Any]:
+    ):
+        """
+        Forward pass of the PoseDiffusionModel.
+
+        Args:
+            image (torch.Tensor):
+                Input image tensor, Bx3xHxW.
+            gt_cameras (Optional[CamerasBase], optional):
+                Camera object. Defaults to None.
+            sequence_name (Optional[List[str]], optional):
+                List of sequence names. Defaults to None.
+            cond_fn ([type], optional):
+                Conditional function. Wrapper for GGS or other functions.
+            cond_start_step (int, optional):
+                The sampling step to start using conditional function.
+
+        Returns:
+            PerspectiveCameras: PyTorch3D camera object.
+        """
+
         z = self.image_feature_extractor(image)
 
         z = z.unsqueeze(0)
@@ -82,6 +110,7 @@ class PoseDiffusionModel(nn.Module):
         B, N, _ = z.shape
         target_shape = [B, N, self.target_dim]
 
+        # sampling
         pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(
             shape=target_shape,
             z=z,
@@ -89,6 +118,7 @@ class PoseDiffusionModel(nn.Module):
             cond_start_step=cond_start_step,
         )
 
+        # convert the encoded representation to PyTorch3D cameras
         pred_cameras = pose_encoding_to_camera(
             pose_encoding, pose_encoding_type=self.pose_encoding_type
         )
