@@ -4,7 +4,7 @@ ckpt: co3d_model1.pth
 seed: 0
 
 GGS:
-    enable: False
+    enable: True
     start_step: 10
     learning_rate: 0.01
     iter_num: 100

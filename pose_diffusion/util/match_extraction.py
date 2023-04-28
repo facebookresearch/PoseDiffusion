@@ -24,6 +24,7 @@ from hloc.utils.database import (
     image_ids_to_pair_id,
     pair_id_to_image_ids,
 )
+from hloc.reconstruction import create_empty_db, import_images, get_image_ids
 
 
 def extract_match(image_folder_path: str, image_info: Dict):
@@ -81,7 +82,9 @@ def colmap_keypoint_to_pytorch3d(matches, keypoints, image_info):
 
 
 def run_hloc(output_dir: str):
-    # Largely borrowed from hlob
+    # learned from
+    # https://github.com/cvg/Hierarchical-Localization/blob/master/pipeline_SfM.ipynb
+
     images = Path(output_dir)
     outputs = Path(os.path.join(output_dir, "output"))
     sfm_pairs = outputs / "pairs-sfm.txt"
@@ -126,6 +129,8 @@ def compute_matches_and_keypoints(
     image_list: Optional[List[str]] = None,
     image_options: Optional[Dict[str, Any]] = None,
 ) -> pycolmap.Reconstruction:
+    # learned from
+    # https://github.com/cvg/Hierarchical-Localization/blob/master/hloc/reconstruction.py
     assert features.exists(), features
     assert pairs.exists(), pairs
     assert matches.exists(), matches
@@ -133,9 +138,9 @@ def compute_matches_and_keypoints(
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database = sfm_dir / "database.db"
 
-    _create_empty_db(database)
-    _import_images(image_dir, database, camera_mode, image_list, image_options)
-    image_ids = _get_image_ids(database)
+    create_empty_db(database)
+    import_images(image_dir, database, camera_mode, image_list, image_options)
+    image_ids = get_image_ids(database)
     import_features(image_ids, database, features)
     import_matches(image_ids, database, pairs, matches, min_match_score)
     estimation_and_geometric_verification(database, pairs, verbose)
@@ -158,52 +163,6 @@ def compute_matches_and_keypoints(
     db.close()
 
     return matches, keypoints
-
-
-# helper functions
-
-
-def _create_empty_db(database_path: Path):
-    if database_path.exists():
-        logger.warning("The database already exists, deleting it.")
-        database_path.unlink()
-    logger.info("Creating an empty database...")
-    db = COLMAPDatabase.connect(database_path)
-    db.create_tables()
-    db.commit()
-    db.close()
-
-
-def _import_images(
-    image_dir: Path,
-    database_path: Path,
-    camera_mode: pycolmap.CameraMode,
-    image_list: Optional[List[str]] = None,
-    options: Optional[Dict[str, Any]] = None,
-):
-    logger.info("Importing images into the database...")
-    if options is None:
-        options = {}
-    images = list(image_dir.iterdir())
-    if len(images) == 0:
-        raise IOError(f"No images found in {image_dir}.")
-    with pycolmap.ostream():
-        pycolmap.import_images(
-            database_path,
-            image_dir,
-            camera_mode,
-            image_list=image_list or [],
-            options=options,
-        )
-
-
-def _get_image_ids(database_path: Path) -> Dict[str, int]:
-    db = COLMAPDatabase.connect(database_path)
-    images = {}
-    for name, image_id in db.execute("SELECT name, image_id FROM images;"):
-        images[name] = image_id
-    db.close()
-    return images
 
 
 def _blob_to_array_safe(blob, dtype, shape=(-1,)):
