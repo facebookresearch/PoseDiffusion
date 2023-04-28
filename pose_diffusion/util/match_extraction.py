@@ -131,9 +131,6 @@ def compute_matches_and_keypoints(
 ) -> pycolmap.Reconstruction:
     # learned from
     # https://github.com/cvg/Hierarchical-Localization/blob/master/hloc/reconstruction.py
-    assert features.exists(), features
-    assert pairs.exists(), pairs
-    assert matches.exists(), matches
 
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database = sfm_dir / "database.db"
