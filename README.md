@@ -4,7 +4,7 @@
 
 Installation assumes Python 3.9 and CUDA 11.6
 ```.bash
-bash install.sh
+source install.sh
 ```
 
 The ckpt is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0).

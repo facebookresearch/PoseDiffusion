@@ -1,5 +1,7 @@
 # This Script Assumes Python 3.9, CUDA 11.6
 
+conda deactivate
+
 # Set environment variables
 export ENV_NAME=posediffusion
 export PYTHON_VERSION=3.9
