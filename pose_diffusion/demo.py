@@ -79,8 +79,10 @@ def main(cfg: DictConfig) -> None:
         cond_fn = partial(
             geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg
         )
+        print("\033[92m=====> Sampling with GGS <=====\033[0m")
     else:
         cond_fn = None
+        print("\033[92m=====> Sampling without GGS <=====\033[0m")
 
     # Forward
     with torch.no_grad():
@@ -121,9 +123,11 @@ def main(cfg: DictConfig) -> None:
     # Compute the absolute rotation error
     ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
 
-    print(f"For samples/apple: the absolute rotation error is {ARE:.6f}.")
-    print(f"Without GGS, it should be smaller than 3.20 degress.")
-    print(f"With GGS, it should be smaller than 2.16 degress.")
+    print(
+        f"For samples/apple: the absolute rotation error is {ARE:.6f} degrees."
+    )
+    print(f"Without GGS, it should be smaller than 3.20 degrees.")
+    print(f"With GGS, it should be smaller than 2.16 degrees.")
 
 
 if __name__ == "__main__":
