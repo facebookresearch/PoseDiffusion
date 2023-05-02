@@ -78,7 +78,7 @@ class GaussianDiffusion(nn.Module):
         loss_type="l1",
         objective="pred_noise",
         beta_schedule="custom",
-        p2_loss_weight_gamma=0.0,  # p2 loss weight, from https://arxiv.org/abs/2204.00227 - 0 is equivalent to weight of 1 across time - 1. is recommended
+        p2_loss_weight_gamma=0.0,  
         p2_loss_weight_k=1,
     ):
         super().__init__()
@@ -88,7 +88,8 @@ class GaussianDiffusion(nn.Module):
         assert objective in {
             "pred_noise",
             "pred_x0",
-        }, "objective must be either pred_noise (predict noise) or pred_x0 (predict image start)"
+        }, "objective must be either pred_noise (predict noise) \
+            or pred_x0 (predict image start)"
 
         self.timesteps = timesteps
         self.sampling_timesteps = sampling_timesteps
@@ -182,7 +183,8 @@ class GaussianDiffusion(nn.Module):
         # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
         register_buffer("posterior_variance", posterior_variance)
 
-        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
+        # below: log calculation clipped because the posterior variance is 0 
+        # at the beginning of the diffusion chain
         register_buffer(
             "posterior_log_variance_clipped",
             torch.log(posterior_variance.clamp(min=1e-20)),
@@ -268,7 +270,8 @@ class GaussianDiffusion(nn.Module):
 
         if clip_denoised:
             raise NotImplementedError(
-                "We don't clip the output because pose does not have a clear bound."
+                "We don't clip the output because \
+                    pose does not have a clear bound."
             )
 
         (
@@ -313,11 +316,7 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(
-        self,
-        shape,
-        z: torch.Tensor,
-        cond_fn=None,
-        cond_start_step=0,
+        self, shape, z: torch.Tensor, cond_fn=None, cond_start_step=0,
     ):
         batch, device = shape[0], self.betas.device
 
@@ -350,11 +349,7 @@ class GaussianDiffusion(nn.Module):
         )
 
     def p_losses(
-        self,
-        x_start,
-        t,
-        z=None,
-        noise=None,
+        self, x_start, t, z=None, noise=None,
     ):
         noise = default(noise, lambda: torch.randn_like(x_start))
         # noise sample

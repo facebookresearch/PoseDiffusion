@@ -18,8 +18,9 @@ class CombinedDataLoader:
         self.smallest_length = min(len(dataloader1), len(dataloader2))
 
     def __iter__(self):
-        self.iterator1, self.iterator2 = iter(self.dataloader1), iter(
-            self.dataloader2
+        self.iterator1, self.iterator2 = (
+            iter(self.dataloader1),
+            iter(self.dataloader2),
         )
         self.counter = 0
         return self

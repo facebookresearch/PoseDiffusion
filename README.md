@@ -2,8 +2,10 @@
 
 ## Please be aware that the latest code updates are now being pushed to the 'dev' branch.
 
-
-Please refer to [pixar_replay](https://github.com/fairinternal/pixar_replay) for the installation instruction.
+Installation assumes Python 3.9 and CUDA 11.6
+```.bash
+bash install.sh
+```
 
 The ckpt is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0).
 
@@ -43,6 +45,7 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 - [x] Case Verification of GGS
 - [ ] A General Dataset Class
 - [x] Update Model Weights to V1
+- [x] Installation Script
 - [ ] Evaluation Pipeline
 - [ ] Statistical Verification of GGS
 

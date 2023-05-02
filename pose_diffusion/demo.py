@@ -84,7 +84,7 @@ def main(cfg: DictConfig) -> None:
 
     # Forward
     with torch.no_grad():
-        # Obtain predicted camera parameters (rotation, translation, and focal length)
+        # Obtain predicted camera parameters
         # pred_cameras is a PerspectiveCameras object with attributes
         # pred_cameras.R, pred_cameras.T, pred_cameras.focal_length
 

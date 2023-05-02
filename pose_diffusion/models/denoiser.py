@@ -46,16 +46,15 @@ class Denoiser(nn.Module):
         d_model = TRANSFORMER.d_model
         self._first = nn.Linear(first_dim, d_model)
 
-        # slightly different from the paper that we use 2 encoder layers and 6 decoder layers
+        # slightly different from the paper that 
+        # we use 2 encoder layers and 6 decoder layers
         # here we use a transformer with 8 encoder layers
         # call TransformerEncoderWrapper() to build a encoder-only transformer
         self._trunk = instantiate(TRANSFORMER, _recursive_=False)
 
         # TODO: change the implementation of MLP to a more mature one
         self._last = MLP(
-            d_model,
-            [mlp_hidden_dim, self.target_dim],
-            norm_layer=nn.LayerNorm,
+            d_model, [mlp_hidden_dim, self.target_dim], norm_layer=nn.LayerNorm,
         )
 
     def forward(
@@ -144,7 +143,8 @@ class MLP(torch.nn.Sequential):
         norm_first: bool = False,
         dropout: float = 0.0,
     ):
-        # The addition of `norm_layer` is inspired from the implementation of TorchMultimodal:
+        # The addition of `norm_layer` is inspired from 
+        # the implementation of TorchMultimodal:
         # https://github.com/facebookresearch/multimodal/blob/5dec8a/torchmultimodal/modules/layers/mlp.py
         params = {} if inplace is None else {"inplace": inplace}
 

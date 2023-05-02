@@ -6,10 +6,7 @@ from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
 
 
 def geometry_guided_sampling(
-    model_mean: torch.Tensor,
-    t: int,
-    matches_dict: Dict,
-    GGS_cfg: Dict,
+    model_mean: torch.Tensor, t: int, matches_dict: Dict, GGS_cfg: Dict,
 ):
     # pre-process matches
     b, c, h, w = matches_dict["img_shape"]
@@ -23,6 +20,7 @@ def geometry_guided_sampling(
     i12 = _to_device(matches_dict["i12"])
 
     pair_idx = i12[:, 0] * b + i12[:, 1]
+    pair_idx = pair_idx.long()
 
     def _to_homogeneous(tensor):
         return torch.nn.functional.pad(tensor, [0, 1], value=1)
@@ -196,10 +194,7 @@ def compute_sampson_distance(
         return sampson
 
     sampson = _sampson_distance(
-        F,
-        kp1_homo.float(),
-        kp2_homo.float(),
-        pair_idx,
+        F, kp1_homo.float(), kp2_homo.float(), pair_idx,
     )
 
     sampson_to_print = sampson.detach().clone().clamp(max=sampson_max).mean()
