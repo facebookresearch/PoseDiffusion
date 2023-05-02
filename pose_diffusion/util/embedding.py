@@ -12,7 +12,9 @@ class TimeStepEmbedding(nn.Module):
         self.max_period = max_period
 
         self.linear = nn.Sequential(
-            nn.Linear(dim, dim // 2), nn.SiLU(), nn.Linear(dim // 2, dim // 2),
+            nn.Linear(dim, dim // 2),
+            nn.SiLU(),
+            nn.Linear(dim // 2, dim // 2),
         )
 
         self.out_dim = dim // 2

@@ -78,7 +78,7 @@ class GaussianDiffusion(nn.Module):
         loss_type="l1",
         objective="pred_noise",
         beta_schedule="custom",
-        p2_loss_weight_gamma=0.0,  
+        p2_loss_weight_gamma=0.0,
         p2_loss_weight_k=1,
     ):
         super().__init__()
@@ -183,7 +183,7 @@ class GaussianDiffusion(nn.Module):
         # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
         register_buffer("posterior_variance", posterior_variance)
 
-        # below: log calculation clipped because the posterior variance is 0 
+        # below: log calculation clipped because the posterior variance is 0
         # at the beginning of the diffusion chain
         register_buffer(
             "posterior_log_variance_clipped",
@@ -316,7 +316,11 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(
-        self, shape, z: torch.Tensor, cond_fn=None, cond_start_step=0,
+        self,
+        shape,
+        z: torch.Tensor,
+        cond_fn=None,
+        cond_start_step=0,
     ):
         batch, device = shape[0], self.betas.device
 
@@ -349,7 +353,11 @@ class GaussianDiffusion(nn.Module):
         )
 
     def p_losses(
-        self, x_start, t, z=None, noise=None,
+        self,
+        x_start,
+        t,
+        z=None,
+        noise=None,
     ):
         noise = default(noise, lambda: torch.randn_like(x_start))
         # noise sample

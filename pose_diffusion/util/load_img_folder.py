@@ -81,13 +81,18 @@ def _center_crop_square(image: np.ndarray) -> np.ndarray:
 
     # the format from xywh to xyxy
     bbox_xyxy = _clamp_box_to_image_bounds_and_round(
-        _get_clamp_bbox(bbox_xywh, box_crop_context=0.0,), image_size_hw=(h, w),
+        _get_clamp_bbox(
+            bbox_xywh,
+            box_crop_context=0.0,
+        ),
+        image_size_hw=(h, w),
     )
     return cropped_image, bbox_xyxy, min_dim
 
 
 def _get_clamp_bbox(
-    bbox: torch.Tensor, box_crop_context: float = 0.0,
+    bbox: torch.Tensor,
+    box_crop_context: float = 0.0,
 ) -> torch.Tensor:
     # box_crop_context: rate of expansion for bbox
     # returns possibly expanded bbox xyxy as float
@@ -127,7 +132,8 @@ def _bbox_xywh_to_xyxy(
 
 
 def _clamp_box_to_image_bounds_and_round(
-    bbox_xyxy: torch.Tensor, image_size_hw: Tuple[int, int],
+    bbox_xyxy: torch.Tensor,
+    image_size_hw: Tuple[int, int],
 ) -> torch.LongTensor:
     bbox_xyxy = bbox_xyxy.clone()
     bbox_xyxy[[0, 2]] = torch.clamp(bbox_xyxy[[0, 2]], 0, image_size_hw[-1])

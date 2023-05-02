@@ -48,7 +48,10 @@ def pose_encoding_to_camera(
         raise ValueError(f"Unknown pose encoding {pose_encoding_type}")
 
     pred_cameras = PerspectiveCameras(
-        focal_length=focal_length, R=R, T=abs_T, device=R.device,
+        focal_length=focal_length,
+        R=R,
+        T=abs_T,
+        device=R.device,
     )
 
     return pred_cameras
