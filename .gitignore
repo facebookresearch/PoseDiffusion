@@ -1,0 +1,19 @@
+build/
+dist/
+tmp/
+**/tmp/
+.vscode/
+*.egg-info/
+**/__pycache__/
+**/outputs/
+*-checkpoint.ipynb
+**/.ipynb_checkpoints
+**/.ipynb_checkpoints/**
+test_visualizations/**
+visualisations/**
+dependency/
+**/data/**
+*.log
+# Ignore .DS_Store files in any folder
+.DS_Store
+**/.DS_Store
