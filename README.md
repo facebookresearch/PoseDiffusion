@@ -13,7 +13,7 @@ We provide a simple installation script, which assumes Python 3.9 and CUDA 11.6 
 source install.sh
 ```
 
-The model ckpt is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0).
+The model ckpt is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
 
 An example usage is as below:
 
