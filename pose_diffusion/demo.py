@@ -75,17 +75,20 @@ def main(cfg: DictConfig) -> None:
 
         kp1, kp2, i12 = extract_match(folder_path, image_info)
 
-        keys = ["kp1", "kp2", "i12", "img_shape"]
-        values = [kp1, kp2, i12, images.shape]
-        matches_dict = dict(zip(keys, values))
-
-        cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type
-        GGS_cfg = OmegaConf.to_container(cfg.GGS)
-
-        cond_fn = partial(
-            geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg
-        )
-        print("[92m=====> Sampling with GGS <=====[0m")
+        if kp1 is not None:
+            keys = ["kp1", "kp2", "i12", "img_shape"]
+            values = [kp1, kp2, i12, images.shape]
+            matches_dict = dict(zip(keys, values))
+    
+            cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type
+            GGS_cfg = OmegaConf.to_container(cfg.GGS)
+    
+            cond_fn = partial(
+                geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg
+            )
+            print("[92m=====> Sampling with GGS <=====[0m")
+        else:
+            cond_fn = None
     else:
         cond_fn = None
         print("[92m=====> Sampling without GGS <=====[0m")
