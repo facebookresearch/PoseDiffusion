@@ -33,8 +33,7 @@ Using a Quadro GP100 GPU, the inference time for a 20-frame sequence wo GGS is a
 
 ## Acknowledgement
 
-Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch), [guided-diffusion
-](https://github.com/openai/guided-diffusion), and [hloc](https://github.com/cvg/Hierarchical-Localization).
+Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch), [guided-diffusion](https://github.com/openai/guided-diffusion), and [hloc](https://github.com/cvg/Hierarchical-Localization).
 
 
 
