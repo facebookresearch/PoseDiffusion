@@ -23,6 +23,7 @@ python demo.py image_folder="samples/apple" ckpt="/PATH/TO/DOWNLOADED/CKPT"
 
 Using a Quadro GP100 GPU, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds (including the time of 20-seconds matching extration).
 
+By default, we use [Visdom](https://github.com/fossasia/visdom) for the visualization of cameras. Please check your setting of Visdom to conduct visualization properly.
 
 ## Changelog
 

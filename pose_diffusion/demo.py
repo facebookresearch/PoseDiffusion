@@ -22,12 +22,15 @@ import time
 from functools import partial
 from pytorch3d.renderer.cameras import PerspectiveCameras
 from pytorch3d.ops import corresponding_cameras_alignment
+from pytorch3d.implicitron.tools import model_io, vis_utils
+from pytorch3d.vis.plotly_vis import plot_scene
 
 from util.utils import seed_all_random_engines
 from util.match_extraction import extract_match
 from util.load_img_folder import load_and_preprocess_images
 from util.geometry_guided_sampling import geometry_guided_sampling
 from util.metric import compute_ARE
+from visdom import Visdom
 
 
 @hydra.main(config_path="../cfgs/", config_name="default")
@@ -79,12 +82,14 @@ def main(cfg: DictConfig) -> None:
             keys = ["kp1", "kp2", "i12", "img_shape"]
             values = [kp1, kp2, i12, images.shape]
             matches_dict = dict(zip(keys, values))
-    
+
             cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type
             GGS_cfg = OmegaConf.to_container(cfg.GGS)
-    
+
             cond_fn = partial(
-                geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg
+                geometry_guided_sampling,
+                matches_dict=matches_dict,
+                GGS_cfg=GGS_cfg,
             )
             print("[92m=====> Sampling with GGS <=====[0m")
         else:
@@ -125,18 +130,34 @@ def main(cfg: DictConfig) -> None:
         cameras_src=pred_cameras,
         cameras_tgt=gt_cameras,
         estimate_scale=True,
-        mode="centers",
-        eps=1e-4,
+        mode="extrinsics",
+        eps=1e-9,
     )
 
     # Compute the absolute rotation error
     ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
 
     print(
-        f"For samples/apple: the absolute rotation error is {ARE:.6f} degrees."
+        f"For {folder_path}: the absolute rotation error is {ARE:.6f} degrees."
     )
     print(f"Without GGS, it should be smaller than 3.20 degrees.")
     print(f"With GGS, it should be smaller than 2.16 degrees.")
+
+    # For visualization
+    try:
+        viz = Visdom()
+
+        cams_show = {
+            "ours_pred": pred_cameras,
+            "ours_pred_aligned": pred_cameras_aligned,
+            "gt_cameras": gt_cameras,
+        }
+
+        fig = plot_scene({f"{folder_path}": cams_show})
+
+        viz.plotlyplot(fig, env="visual", win="cams")
+    except:
+        print("Please check your visdom connection")
 
 
 if __name__ == "__main__":
