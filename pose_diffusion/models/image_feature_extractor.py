@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
-# This source code is licensed under the license found in the
+# This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
 import logging
@@ -17,7 +17,6 @@ import torch.nn as nn
 import torchvision
 
 import io
-from PIL import Image
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -41,6 +40,9 @@ class MultiScaleImageFeatureExtractor(nn.Module):
             self._net = getattr(torchvision.models, modelname)(pretrained=True)
             self._output_dim = self._net.fc.weight.shape[1]
             self._net.fc = nn.Identity()
+        elif "dinov2" in modelname:
+            self._net = torch.hub.load("facebookresearch/dinov2", modelname)
+            self._output_dim = self._net.norm.weight.shape[0]
         elif "dino" in modelname:
             self._net = torch.hub.load("facebookresearch/dino:main", modelname)
             self._output_dim = self._net.norm.weight.shape[0]
@@ -66,9 +68,7 @@ class MultiScaleImageFeatureExtractor(nn.Module):
 
     def forward(self, image_rgb: torch.Tensor) -> torch.Tensor:
         img_normed = self._resnet_normalize_image(image_rgb)
-
         features = self._compute_multiscale_features(img_normed)
-
         return features
 
     def _resnet_normalize_image(self, img: torch.Tensor) -> torch.Tensor:

@@ -1,9 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import os
 import numpy as np
 from PIL import Image
@@ -37,9 +31,11 @@ def load_and_preprocess_images(
     images = []
     bboxes_xyxy = []
     scales = []
+    raw_image = []
     for path in image_paths:
         image = _load_image(path)
-        image, bbox_xyxy, min_hw = _center_crop_square(image)
+        raw_image.append(image)
+        image, bbox_xyxy, min_hw, h, w = _center_crop_square(image)
         minscale = image_size / min_hw
 
         imre = F.interpolate(
@@ -57,6 +53,8 @@ def load_and_preprocess_images(
 
     # assume all the images have the same shape for GGS
     image_info = {
+        "rawimg": raw_image,
+        "rawsize": (h, w),
         "size": (min_hw, min_hw),
         "bboxes_xyxy": np.stack(bboxes_xyxy),
         "resized_scales": np.stack(scales),
@@ -93,7 +91,7 @@ def _center_crop_square(image: np.ndarray) -> np.ndarray:
         ),
         image_size_hw=(h, w),
     )
-    return cropped_image, bbox_xyxy, min_dim
+    return cropped_image, bbox_xyxy, min_dim, h, w
 
 
 def _get_clamp_bbox(

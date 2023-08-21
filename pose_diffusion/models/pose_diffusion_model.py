@@ -1,7 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
-#
-# This source code is licensed under the license found in the
+# This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
 # Standard library imports
@@ -29,7 +28,7 @@ from pytorch3d.transforms import (
     Transform3d,
     so3_relative_angle,
 )
-from util.camera_transform import pose_encoding_to_camera
+from util.camera_transform import pose_encoding_to_camera, camera_to_pose_encoding
 
 import models
 from hydra.utils import instantiate
@@ -84,6 +83,7 @@ class PoseDiffusionModel(nn.Module):
         sequence_name: Optional[List[str]] = None,
         cond_fn=None,
         cond_start_step=0,
+        training = True, 
     ):
         """
         Forward pass of the PoseDiffusionModel.
@@ -103,25 +103,51 @@ class PoseDiffusionModel(nn.Module):
         Returns:
             PerspectiveCameras: PyTorch3D camera object.
         """
+        
+        shapelist = list(image.shape)
+        batch_size = len(image)    
+        if training:
+            pose_encoding = camera_to_pose_encoding(gt_cameras, pose_encoding_type=self.pose_encoding_type)
+            pose_encoding = pose_encoding.reshape(batch_size, -1, self.target_dim)
+            
+            reshaped_image = image.reshape(shapelist[0]*shapelist[1], *shapelist[2:])
 
-        z = self.image_feature_extractor(image)
+            z = self.image_feature_extractor(reshaped_image).reshape(batch_size, shapelist[1], -1)
+            
+            
+            diffusion_results = self.diffuser(pose_encoding, z=z)
+            
+            diffusion_results["pred_cameras"] = pose_encoding_to_camera(
+                    diffusion_results["x_0_pred"], pose_encoding_type=self.pose_encoding_type)
+            return diffusion_results
+        else:
+            reshaped_image = image.reshape(shapelist[0]*shapelist[1], *shapelist[2:])
+            z = self.image_feature_extractor(reshaped_image).reshape(batch_size, shapelist[1], -1)
+            B, N, _ = z.shape
 
-        z = z.unsqueeze(0)
+            target_shape = [B, N, self.target_dim]
 
-        B, N, _ = z.shape
-        target_shape = [B, N, self.target_dim]
+            #########
+            # import pdb;pdb.set_trace()
+            # from util.utils import seed_all_random_engines
+            # seed_all_random_engines(0)
+            # single, singletmp = self.diffuser.sample(shape=[1, 15, 9],z=z[0:1],cond_fn=cond_fn,cond_start_step=cond_start_step,)
+            # single2, singletmp2 = self.diffuser.sample(shape=[1, 15, 9],z=z[0:1],cond_fn=cond_fn,cond_start_step=cond_start_step,)
+            # single3, singletmp3 = self.diffuser.sample(shape=[1, 15, 9],z=z[0:1],cond_fn=cond_fn,cond_start_step=cond_start_step,)
+            # from util.utils import seed_all_random_engines
+            # seed_all_random_engines(0)
+            # z = torch.load("/data/home/jianyuan/src/ReconstructionJ/pose/pose_diffusion/debug_z_610.pth")
+            #########
+            
+            # sampling
+            pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(shape=target_shape,z=z,cond_fn=cond_fn,cond_start_step=cond_start_step,)
 
-        # sampling
-        pose_encoding, pose_encoding_diffusion_samples = self.diffuser.sample(
-            shape=target_shape,
-            z=z,
-            cond_fn=cond_fn,
-            cond_start_step=cond_start_step,
-        )
+            # convert the encoded representation to PyTorch3D cameras
+            pred_cameras = pose_encoding_to_camera(pose_encoding, pose_encoding_type=self.pose_encoding_type)
 
-        # convert the encoded representation to PyTorch3D cameras
-        pred_cameras = pose_encoding_to_camera(
-            pose_encoding, pose_encoding_type=self.pose_encoding_type
-        )
+            diffusion_results = {
+                "pred_cameras":pred_cameras,
+                "z": z,
+            }
 
-        return pred_cameras
+            return diffusion_results

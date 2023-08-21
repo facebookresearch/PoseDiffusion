@@ -1,15 +1,163 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import torch
 from pytorch3d.transforms.rotation_conversions import (
     matrix_to_quaternion,
     quaternion_to_matrix,
 )
 from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
+import numpy as np
+
+
+
+def bbox_xyxy_to_xywh(xyxy):
+    wh = xyxy[2:] - xyxy[:2]
+    xywh = np.concatenate([xyxy[:2], wh])
+    return xywh
+
+
+
+def adjust_camera_to_bbox_crop_(
+    fl,
+    pp,
+    image_size_wh: torch.Tensor,
+    clamp_bbox_xywh: torch.Tensor,
+):
+    focal_length_px, principal_point_px = _convert_ndc_to_pixels(
+        fl,
+        pp,
+        image_size_wh,
+    )
+    principal_point_px_cropped = principal_point_px - clamp_bbox_xywh[:2]
+
+    focal_length, principal_point_cropped = _convert_pixels_to_ndc(
+        focal_length_px,
+        principal_point_px_cropped,
+        clamp_bbox_xywh[2:],
+    )
+
+    return focal_length, principal_point_cropped
+
+
+def adjust_camera_to_image_scale_(
+    fl,
+    pp,
+    original_size_wh: torch.Tensor,
+    new_size_wh: torch.LongTensor,
+):
+    focal_length_px, principal_point_px = _convert_ndc_to_pixels(
+        fl,
+        pp,
+        original_size_wh,
+    )
+
+    # now scale and convert from pixels to NDC
+    image_size_wh_output = new_size_wh.float()
+    scale = (image_size_wh_output / original_size_wh).min(dim=-1, keepdim=True).values
+    focal_length_px_scaled = focal_length_px * scale
+    principal_point_px_scaled = principal_point_px * scale
+
+    focal_length_scaled, principal_point_scaled = _convert_pixels_to_ndc(
+        focal_length_px_scaled,
+        principal_point_px_scaled,
+        image_size_wh_output,
+    )
+    return focal_length_scaled, principal_point_scaled
+
+
+
+def _convert_ndc_to_pixels(
+    focal_length: torch.Tensor,
+    principal_point: torch.Tensor,
+    image_size_wh: torch.Tensor,
+):
+    half_image_size = image_size_wh / 2
+    rescale = half_image_size.min()
+    principal_point_px = half_image_size - principal_point * rescale
+    focal_length_px = focal_length * rescale
+    return focal_length_px, principal_point_px
+
+
+def _convert_pixels_to_ndc(
+    focal_length_px: torch.Tensor,
+    principal_point_px: torch.Tensor,
+    image_size_wh: torch.Tensor,
+):
+    half_image_size = image_size_wh / 2
+    rescale = half_image_size.min()
+    principal_point = (half_image_size - principal_point_px) / rescale
+    focal_length = focal_length_px / rescale
+    return focal_length, principal_point
+
+
+
+
+
+# def adjust_camera_to_image_scale_np(
+#     fl,
+#     pp,
+#     original_size_wh,
+#     new_size_wh,):
+#     focal_length_px, principal_point_px = _convert_ndc_to_pixels(
+#         fl,pp,
+#         original_size_wh,
+#     )
+
+#     # now scale and convert from pixels to NDC
+#     # image_size_wh_output = new_size_wh.float()
+#     image_size_wh_output = new_size_wh.astype(np.float32)
+
+#     # scale = (image_size_wh_output / original_size_wh).min(dim=-1, keepdim=True).values
+#     scale = np.min(image_size_wh_output / original_size_wh, axis=-1, keepdims=True)
+
+#     focal_length_px_scaled = focal_length_px * scale
+#     principal_point_px_scaled = principal_point_px * scale
+
+#     focal_length_scaled, principal_point_scaled = _convert_pixels_to_ndc(
+#         focal_length_px_scaled,
+#         principal_point_px_scaled,
+#         image_size_wh_output,
+#     )
+
+#     return focal_length_scaled, principal_point_scaled
+
+# def adjust_camera_to_bbox_crop_np(
+#     fl,
+#     pp,
+#     image_size_wh,
+#     clamp_bbox_xywh,
+# ):
+#     focal_length_px, principal_point_px = _convert_ndc_to_pixels_np(fl,pp,image_size_wh)
+    
+#     principal_point_px_cropped = principal_point_px - clamp_bbox_xywh[:2]
+
+#     focal_length, principal_point_cropped = _convert_pixels_to_ndc_np(
+#         focal_length_px,
+#         principal_point_px_cropped,
+#         clamp_bbox_xywh[2:],
+#     )
+#     return focal_length, principal_point_cropped
+
+
+# def _convert_ndc_to_pixels_np(
+#     focal_length,
+#     principal_point,
+#     image_size_wh,):
+#     half_image_size = image_size_wh / 2
+#     rescale = half_image_size.min()
+#     principal_point_px = half_image_size - principal_point * rescale
+#     focal_length_px = focal_length * rescale
+#     return focal_length_px, principal_point_px
+
+
+# def _convert_pixels_to_ndc_np(
+#     focal_length_px,
+#     principal_point_px,
+#     image_size_wh,):
+#     half_image_size = image_size_wh / 2
+#     rescale = half_image_size.min()
+#     principal_point = (half_image_size - principal_point_px) / rescale
+#     focal_length = focal_length_px / rescale
+#     return focal_length, principal_point
+
 
 
 def pose_encoding_to_camera(
@@ -18,6 +166,7 @@ def pose_encoding_to_camera(
     log_focal_length_bias=1.8,
     min_focal_length=0.1,
     max_focal_length=20,
+    return_dict = False,
 ):
     """
     Args:
@@ -26,8 +175,7 @@ def pose_encoding_to_camera(
         pose_encoding_type: The type of pose encoding,
                         only "absT_quaR_logFL" is supported.
     """
-
-    batch_size, num_poses, _ = pose_encoding.shape
+    
     pose_encoding_reshaped = pose_encoding.reshape(
         -1, pose_encoding.shape[-1]
     )  # Reshape to BNxC
@@ -52,6 +200,9 @@ def pose_encoding_to_camera(
         )
     else:
         raise ValueError(f"Unknown pose encoding {pose_encoding_type}")
+        
+    if return_dict:
+        return {"focal_length":focal_length, "R": R, "T": abs_T}
 
     pred_cameras = PerspectiveCameras(
         focal_length=focal_length,
@@ -59,5 +210,30 @@ def pose_encoding_to_camera(
         T=abs_T,
         device=R.device,
     )
-
     return pred_cameras
+
+
+def camera_to_pose_encoding(
+    camera,
+    pose_encoding_type="absT_quaR_logFL",
+    log_focal_length_bias=1.8,
+    min_focal_length=0.1,
+    max_focal_length=20,
+):
+    """
+    """
+    
+    if pose_encoding_type == "absT_quaR_logFL":
+        # Convert rotation matrix to quaternion
+        quaternion_R = matrix_to_quaternion(camera.R)
+        
+        # Calculate log_focal_length
+        log_focal_length = torch.log(torch.clamp(camera.focal_length, min=min_focal_length, max=max_focal_length)) - log_focal_length_bias
+
+        # Concatenate to form pose_encoding
+        pose_encoding = torch.cat([camera.T, quaternion_R, log_focal_length], dim=-1)
+
+    else:
+        raise ValueError(f"Unknown pose encoding {pose_encoding_type}")
+
+    return pose_encoding

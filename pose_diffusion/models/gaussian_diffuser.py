@@ -1,10 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
-# Modified from https://github.com/lucidrains/denoising-diffusion-pytorch/blob/beb2f2d8dd9b4f2bd5be4719f37082fe061ee450/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
+# https://github.com/lucidrains/denoising-diffusion-pytorch/blob/beb2f2d8dd9b4f2bd5be4719f37082fe061ee450/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py
 
 import math
 import copy
@@ -25,7 +19,6 @@ from torchvision import transforms as T, utils
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
 
-from PIL import Image
 from tqdm.auto import tqdm
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -286,6 +279,7 @@ class GaussianDiffusion(nn.Module):
             posterior_log_variance,
         ) = self.q_posterior(x_start=x_start, x_t=x, t=t)
 
+
         return model_mean, posterior_variance, posterior_log_variance, x_start
 
     @torch.no_grad()
@@ -299,6 +293,11 @@ class GaussianDiffusion(nn.Module):
         cond_fn=None,
         cond_start_step=0,
     ):
+        ################################################################################
+        # from util.utils import seed_all_random_engines
+        # seed_all_random_engines(0)
+        ################################################################################
+        
         b, *_, device = *x.shape, x.device
         batched_times = torch.full(
             (x.shape[0],), t, device=x.device, dtype=torch.long
@@ -311,13 +310,19 @@ class GaussianDiffusion(nn.Module):
             clip_denoised=clip_denoised,
         )
 
+
         if cond_fn is not None and t < cond_start_step:
-            model_mean = cond_fn(model_mean, t)
+            # print(model_mean[...,3:7].norm(dim=-1, keepdim=True))
+            # tmp = model_mean.clone()
+            model_mean = cond_fn(model_mean, t)      
+            # diff_norm = torch.norm(tmp-model_mean)
+            # print(f"the diff norm is {diff_norm}")
             noise = 0.0
         else:
             noise = torch.randn_like(x) if t > 0 else 0.0  # no noise if t == 0
-
+        
         pred = model_mean + (0.5 * model_log_variance).exp() * noise
+
         return pred, x_start
 
     @torch.no_grad()
@@ -337,6 +342,7 @@ class GaussianDiffusion(nn.Module):
 
         pose_process = []
         pose_process.append(pose.unsqueeze(0))
+
 
         for t in reversed(range(0, self.num_timesteps)):
             pose, _ = self.p_sample(
@@ -368,7 +374,6 @@ class GaussianDiffusion(nn.Module):
         noise = default(noise, lambda: torch.randn_like(x_start))
         # noise sample
         x = self.q_sample(x_start=x_start, t=t, noise=noise)
-
         model_out = self.model(x, t, z)
 
         if self.objective == "pred_noise":
@@ -381,10 +386,8 @@ class GaussianDiffusion(nn.Module):
             raise ValueError(f"unknown objective {self.objective}")
 
         loss = self.loss_fn(model_out, target, reduction="none")
-
-        loss = reduce(loss, "b ... -> b (...)", "mean")
-        loss = loss * extract(self.p2_loss_weight, t, loss.shape)
-
+        # loss = reduce(loss, "b ... -> b (...)", "mean")
+        # loss = loss * extract(self.p2_loss_weight, t, loss.shape)
         return {
             "loss": loss,
             "noise": noise,

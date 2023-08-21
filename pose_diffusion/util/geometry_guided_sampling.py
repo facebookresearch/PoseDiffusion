@@ -1,15 +1,8 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import torch
 from typing import Dict, List, Optional, Union
 from util.camera_transform import pose_encoding_to_camera
 from util.get_fundamental_matrix import get_fundamental_matrices
 from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
-
 
 def geometry_guided_sampling(
     model_mean: torch.Tensor,
@@ -21,6 +14,7 @@ def geometry_guided_sampling(
     b, c, h, w = matches_dict["img_shape"]
     device = model_mean.device
 
+    
     def _to_device(tensor):
         return torch.from_numpy(tensor).to(device)
 
@@ -50,12 +44,16 @@ def geometry_guided_sampling(
         "w": w,
         "pair_idx": pair_idx,
     }
+    
+        
+    # import time
+    # start_time = time.time()
 
     # conduct GGS
-    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)  # 200
 
     # Optimize FL, R, and T separately
-    model_mean = GGS_optimize(
+    model_mean = GGS_optimize(  # 100
         model_mean,
         t,
         processed_matches,
@@ -65,7 +63,7 @@ def geometry_guided_sampling(
         **GGS_cfg,
     )  # only optimize FL
 
-    model_mean = GGS_optimize(
+    model_mean = GGS_optimize(  # 100
         model_mean,
         t,
         processed_matches,
@@ -75,7 +73,7 @@ def geometry_guided_sampling(
         **GGS_cfg,
     )  # only optimize R
 
-    model_mean = GGS_optimize(
+    model_mean = GGS_optimize(  # 100
         model_mean,
         t,
         processed_matches,
@@ -85,7 +83,15 @@ def geometry_guided_sampling(
         **GGS_cfg,
     )  # only optimize T
 
-    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)  # 200
+    
+
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print("Time taken: {:.4f} seconds".format(elapsed_time/700))
+
+    model_mean = normalize_quaternions(model_mean)
+
     return model_mean
 
 
@@ -210,6 +216,15 @@ def compute_sampson_distance(
     )
 
     sampson_to_print = sampson.detach().clone().clamp(max=sampson_max).mean()
-    sampson = sampson[sampson < sampson_max]
+    
 
+    sampson = sampson[sampson < sampson_max]
     return sampson, sampson_to_print
+
+
+
+def normalize_quaternions(model_mean: torch.Tensor) -> torch.Tensor:
+    quaternions = model_mean[:,:,3:7]
+    normalized_quaternions = quaternions / quaternions.norm(dim=-1, keepdim=True)
+    model_mean[:,:,3:7] = normalized_quaternions
+    return model_mean

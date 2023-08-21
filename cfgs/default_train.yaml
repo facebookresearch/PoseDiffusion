@@ -1,0 +1,64 @@
+# ckpt: co3d_model1.pth
+seed: 0
+
+train:
+    img_size: 224
+    category: all
+    restart_num: 50
+    lr: 0.0001
+    resume_ckpt: False
+    epochs: 100
+    ckpt_interval: 10
+    mixed_precision: None
+    num_workers: 0
+
+    eval_interval: 10
+
+    print_interval: 10
+
+    len_train: 1024
+    len_eval: 128
+
+    max_images: 640
+    normalize_cameras: True
+    dynamic_batch: True
+    pt3d_co3d: False
+
+    persistent_workers: True
+
+    pin_memory: False
+    clip_grad: 1.0
+    preload_image: False
+    cudnnbenchmark: False
+
+debug: False
+profile: False
+
+
+
+MODEL:
+    _target_: models.PoseDiffusionModel
+
+    pose_encoding_type: absT_quaR_logFL
+
+    IMAGE_FEATURE_EXTRACTOR: 
+        _target_: models.MultiScaleImageFeatureExtractor
+        modelname: "dino_vits16"
+        freeze: False
+
+    DENOISER: 
+        _target_: models.Denoiser
+        TRANSFORMER:
+            _target_:               models.TransformerEncoderWrapper
+            d_model:                512
+            nhead:                  4
+            dim_feedforward:        1024
+            num_encoder_layers:     8
+            dropout:                0.1
+            batch_first:            True
+            norm_first:             True
+
+
+    DIFFUSER:
+        _target_: models.GaussianDiffusion
+        beta_schedule: custom

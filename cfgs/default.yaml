@@ -3,14 +3,59 @@ image_size: 224
 ckpt: co3d_model1.pth
 seed: 0
 
+theseus: True
+
 GGS:
-    enable: True
+    enable: False
     start_step: 10
-    learning_rate: 0.01
+    learning_rate: 0.001
     iter_num: 100
     sampson_max: 10
     min_matches: 10
     alpha: 0.0001
+    use_graph: True
+
+
+
+ba:
+    log_radius: -2.5
+    max_2d_range: 1.414
+    max_2d_dis: 0.25
+    pt3d_to_theseus: True
+
+    # optimizer_cls: GaussNewton
+    optimizer_cls: LevenbergMarquardt       # GauNew
+    # linear_solver_cls: LUCudaSparseSolver   
+    linear_solver_cls: BaspachoSparseSolver
+    optimizer_kwargs:
+        verbose: true
+        track_err_history: False
+        adaptive_damping: true
+        # backward_mode: implicit
+        # __keep_final_step_size__: true
+    max_iters: 20 
+    step_size: 0.2
+    regularize: True                       # False
+    reg_w: 1e-3
+    vectorize: true
+    empty_cuda_cache: false
+
+profile: False
+ba_profile: True
+
+
+match:
+    exhau_search: False
+    num_matched: 5
+    match_thres: 0.95
+    track_len_min: 5
+    line_dis_thres: 0.01
+
+
+outer_optim:
+    lr: 0.1
+    num_epochs: 20
+
 
 
 MODEL:
