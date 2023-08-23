@@ -25,6 +25,10 @@ Using a Quadro GP100 GPU, the inference time for a 20-frame sequence wo GGS is a
 
 By default, we use [Visdom](https://github.com/fossasia/visdom) for the visualization of cameras. Please check your setting of Visdom to conduct visualization properly.
 
+## Training
+
+The code for training has been shared in the dev branch as a preliminary version. Please note that this code has been refactored and is undergoing testing.
+
 ## Changelog
 
 ### Co3D Model V1 (2023-04-18)
