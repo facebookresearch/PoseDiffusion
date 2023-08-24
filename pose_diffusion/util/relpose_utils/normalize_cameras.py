@@ -74,7 +74,7 @@ def compute_optical_axis_intersection(cameras):
     return p_intersect, dist, p_line_intersect, pp2, r
 
 
-def normalize_cameras(cameras, scale=1.0):
+def normalize_cameras(cameras, compute_optical = True, first_camera = True, scale=1.0, ):
     """
     Normalizes cameras such that the optical axes point to the origin and the average
     distance to the origin is 1.
@@ -82,28 +82,37 @@ def normalize_cameras(cameras, scale=1.0):
     Args:
         cameras (List[camera]).
     """
-
     # Let distance from first camera to origin be unit
     new_cameras = cameras.clone()
-    new_transform = new_cameras.get_world_to_view_transform()
+        
+    if compute_optical:
+        new_transform = new_cameras.get_world_to_view_transform()
 
-    p_intersect, dist, p_line_intersect, pp, r = compute_optical_axis_intersection(
-        cameras
-    )
-    t = Translate(p_intersect)
+        p_intersect, dist, p_line_intersect, pp, r = compute_optical_axis_intersection(
+            cameras
+        )
+        t = Translate(p_intersect)
 
-    scale = dist.squeeze()[0]
+        scale = dist.squeeze()[0]
 
-    # Degenerate case
-    if scale == 0:
-        print(cameras.T)
-        print(new_transform.get_matrix()[:, 3, :3])
-        raise ValueError("Scale value is zero. Invalid camera configuration.")
+        # Degenerate case
+        if scale == 0:
+            scale = torch.norm(new_cameras.T,dim=(0,1))
+            scale = torch.sqrt(scale)
+            new_cameras.T = new_cameras.T / scale
+        else:
+            new_matrix = t.compose(new_transform).get_matrix()
+            new_cameras.R = new_matrix[:, :3, :3]
+            new_cameras.T = new_matrix[:, 3, :3] / scale
+    else:
+        scale = torch.norm(new_cameras.T,dim=(0,1))
+        scale = torch.sqrt(scale)
+        new_cameras.T = new_cameras.T / scale
 
-    new_matrix = t.compose(new_transform).get_matrix()
-    new_cameras.R = new_matrix[:, :3, :3]
-    new_cameras.T = new_matrix[:, 3, :3] / scale
-    return new_cameras, p_intersect, p_line_intersect, pp, r
+    if first_camera:
+        new_cameras = first_camera_transform(new_cameras)
+        
+    return new_cameras
 
 
 def first_camera_transform(cameras, rotation_only=False):
@@ -117,7 +126,6 @@ def first_camera_transform(cameras, rotation_only=False):
         tT = Translate(new_cameras.T[0].unsqueeze(0))
         t = tR.compose(tT).inverse()
 
-    # new_transform = t.compose(new_transform)
     new_matrix = t.compose(new_transform).get_matrix()
 
     new_cameras.R = new_matrix[:, :3, :3]

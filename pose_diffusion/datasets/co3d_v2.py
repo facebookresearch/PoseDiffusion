@@ -91,15 +91,15 @@ class Co3dDataset(Dataset):
         transform=None,
         debug=False,
         random_aug=True,
-        jitter_scale=[1.1, 1.2],
+        jitter_scale=[0.8, 1.2],
         jitter_trans=[-0.07, 0.07],
         # num_images=2,
-        min_num_images = 20,
+        min_num_images = 50,
         img_size=224,
         # random_num_images=True,
         eval_time=False,
         normalize_cameras=False,
-        first_camera_transform=False,
+        first_camera_transform=True,
         first_camera_rotation_only=False,
         mask_images=False,
         CO3D_DIR = None,
@@ -107,7 +107,10 @@ class Co3dDataset(Dataset):
         foreground_crop = True,
         preload_image = False,
         center_box = True,
-        sort_by_filename = True,
+        sort_by_filename = False,
+        compute_optical = False,
+        color_aug = True,
+        erase_aug = False,
     ):
         """
         Args:
@@ -143,7 +146,6 @@ class Co3dDataset(Dataset):
         self.low_quality_translations = []
         self.rotations = {}
         self.category_map = {}
-        
         if CO3D_DIR == None:
             raise NotImplementedError
             
@@ -220,7 +222,7 @@ class Co3dDataset(Dataset):
             self.jitter_scale = jitter_scale
             self.jitter_trans = jitter_trans
         else:
-            self.jitter_scale = [1.15, 1.15]
+            self.jitter_scale = [1, 1]
             self.jitter_trans = [0, 0]
 
         self.img_size = img_size
@@ -229,6 +231,16 @@ class Co3dDataset(Dataset):
         self.first_camera_transform = first_camera_transform
         self.first_camera_rotation_only = first_camera_rotation_only
         self.mask_images = mask_images
+        self.compute_optical = compute_optical
+        self.color_aug = color_aug
+        self.erase_aug = erase_aug
+        if self.color_aug:
+            self.color_jitter = transforms.Compose([
+                                transforms.RandomApply(
+                                [transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)], p=0.65),
+                                transforms.RandomGrayscale(p=0.15),])
+        if self.erase_aug:
+            self.rand_erase = transforms.RandomErasing(p=0.1, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0, inplace=False)
 
         print(
             f"Low quality translation sequences, not used: {self.low_quality_translations}"
@@ -410,13 +422,14 @@ class Co3dDataset(Dataset):
                 T=[data["T"] for data in annos],
             )
 
-            normalized_cameras, _, _, _, _ = normalize_cameras(cameras)
+            normalized_cameras = normalize_cameras(cameras, compute_optical=self.compute_optical,
+                                    first_camera = self.first_camera_transform)
 
-            if self.first_camera_transform or self.first_camera_rotation_only:
-                normalized_cameras = first_camera_transform(
-                    normalized_cameras,
-                    rotation_only=self.first_camera_rotation_only,
-                )
+            # if self.first_camera_transform or self.first_camera_rotation_only:
+            #     normalized_cameras = first_camera_transform(
+            #         normalized_cameras,
+            #         rotation_only=self.first_camera_rotation_only,
+            #     )
 
             if normalized_cameras == -1:
                 print("Error in normalizing cameras: camera scale was 0")
@@ -445,97 +458,20 @@ class Co3dDataset(Dataset):
             batch["R"] = torch.stack(rotations)
             batch["T"] = torch.stack(translations)
             batch["crop_params"] = torch.stack(crop_parameters)
-            
             batch["fl"] = new_fls
             batch["pp"] = new_pps
-            
+
+
         # Add images
-        if self.transform is None:
-            batch["image"] = images
-        else:
-            batch["image"] = torch.stack(images)
+        if self.transform is not None:
+            images = torch.stack(images)
 
+
+        if self.color_aug and (not self.eval_time):
+            images = self.color_jitter(images)
+            if self.erase_aug:
+                images = self.rand_erase(images)
+
+        batch["image"] = images
+       
         return batch
-
-
-
-
-
-
-
-
-
-    ###############
-    
-    # TO BE REMOVED
-
-
-
-    def load_data(self, category, num_load_workers):
-        with Pool(processes=num_load_workers) as pool:
-            results = list(
-                tqdm.tqdm(
-                    pool.imap(self._load_annotation, category),
-                    total=len(category),
-                )
-            )
-            
-        # Aggregating results
-        aggregated_rotations = {}
-        aggregated_category_map = {}
-        aggregated_low_quality_translations = []
-        
-        for result in results:
-            annotation_file, counter, rotations, category_map, low_quality_translations = result
-
-            aggregated_rotations.update(rotations)
-            aggregated_category_map.update(category_map)
-            aggregated_low_quality_translations.extend(low_quality_translations)
-            
-        return aggregated_rotations, aggregated_category_map, aggregated_low_quality_translations
-
-    def _load_annotation(self, c):
-        annotation_file = osp.join(self.CO3D_ANNOTATION_DIR, f"{c}_{self.split_name}.jgz")
-        with gzip.open(annotation_file, "r") as fin:
-            annotation = json.loads(fin.read())
-
-        counter = 0
-        rotations = {}
-        category_map = {}
-        low_quality_translations = []
-        
-        for seq_name, seq_data in annotation.items():
-            counter += 1
-            if len(seq_data) < self.min_num_images:
-                continue
-
-            filtered_data = []
-            category_map[seq_name] = c
-            bad_seq = False
-            for data in seq_data:
-                # Make sure translations are not ridiculous
-                if data["T"][0] + data["T"][1] + data["T"][2] > 1e5:
-                    bad_seq = True
-                    low_quality_translations.append(seq_name)
-                    break
-
-                # Ignore all unnecessary information.
-                filtered_data.append(
-                    {
-                        "filepath": data["filepath"],
-                        "bbox": data["bbox"],
-                        "R": data["R"],
-                        "T": data["T"],
-                        "focal_length": data["focal_length"],
-                        "principal_point": data["principal_point"],
-                    },
-                )
-
-            if not bad_seq:
-                rotations[seq_name] = filtered_data
-
-        print(annotation_file)
-        print(counter)
-            
-        
-        return annotation_file, counter, rotations, category_map, low_quality_translations

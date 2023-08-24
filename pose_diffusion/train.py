@@ -18,7 +18,6 @@ from omegaconf import OmegaConf, DictConfig
 import hydra
 from hydra.utils import instantiate, get_original_cwd
 import models
-import time
 from functools import partial
 from pytorch3d.renderer.cameras import PerspectiveCameras, FoVPerspectiveCameras
 from pytorch3d.ops import corresponding_cameras_alignment
@@ -53,9 +52,18 @@ import psutil
 import io
 import pstats
 
-
+from collections import OrderedDict
 import cProfile  
-  
+from griddle.utils import is_aws_cluster
+
+
+def prefix_with_module(checkpoint):
+    prefixed_checkpoint = OrderedDict()
+    for key, value in checkpoint.items():
+        prefixed_key = "module." + key
+        prefixed_checkpoint[prefixed_key] = value
+    return prefixed_checkpoint
+
 # Wrapper for cProfile.Profile for easily make optional, turn on/off and printing
 class Profiler:
     def __init__(self, active: bool):
@@ -111,22 +119,23 @@ def train_fn(cfg: DictConfig):
     set_seed_and_print(cfg.seed)
     
     if accelerator.is_main_process:
-        viz = vis_utils.get_visdom_connection(
-            server="http://10.201.16.195",
-            port=int(os.environ.get("VISDOM_PORT", 10088)),
-        )
+        if is_aws_cluster():
+            viz = vis_utils.get_visdom_connection(
+                server="http://10.201.16.195",
+                port=int(os.environ.get("VISDOM_PORT", 10088)),
+            )
+        else:
+            viz = vis_utils.get_visdom_connection(
+                server="http://127.0.0.1",
+                port=int(os.environ.get("VISDOM_PORT", 8097)),
+            )
+            
+    accelerator.print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  OMP_NUM_THREADS: {get_thread_count('OMP_NUM_THREADS')}")
+    accelerator.print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  MKL_NUM_THREADS: {get_thread_count('MKL_NUM_THREADS')}")
 
-
-    print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  OMP_NUM_THREADS: {get_thread_count('OMP_NUM_THREADS')}")
-    print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  MKL_NUM_THREADS: {get_thread_count('MKL_NUM_THREADS')}")
-
-    print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  SLURM_CPU_BIND: {get_thread_count('SLURM_CPU_BIND')}")
-    print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  SLURM_JOB_CPUS_PER_NODE: {get_thread_count('SLURM_JOB_CPUS_PER_NODE')}")
+    accelerator.print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  SLURM_CPU_BIND: {get_thread_count('SLURM_CPU_BIND')}")
+    accelerator.print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  SLURM_JOB_CPUS_PER_NODE: {get_thread_count('SLURM_JOB_CPUS_PER_NODE')}")
     
-
-    cpu_num = psutil.cpu_count()
-    print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!  CPU AVAI: {cpu_num}")
-
 
     if cfg.train.pt3d_co3d:
         alldatasets, dataloadermaps = get_datasource(dataset_root="/fsx-repligen/shared/datasets/co3d/", category=TRAINING_CATEGORIES, subset_name="fewview_dev", cfg=cfg)
@@ -143,7 +152,8 @@ def train_fn(cfg: DictConfig):
             persistent_workers = False
 
         if cfg.train.dynamic_batch:
-            batch_sampler = DynamicBatchSampler(len(dataset), dataset_len=cfg.train.len_train, max_images=cfg.train.max_images)
+            batch_sampler = DynamicBatchSampler(len(dataset), dataset_len=cfg.train.len_train, 
+                                                max_images=cfg.train.max_images, images_per_seq = cfg.train.images_per_seq)
         else:
             batch_sampler = FixBatchSampler(dataset, dataset_len=cfg.train.len_train, max_images=cfg.train.max_images)
             
@@ -153,7 +163,8 @@ def train_fn(cfg: DictConfig):
 
 
         if cfg.train.dynamic_batch:
-            eval_batch_sampler = DynamicBatchSampler(len(eval_dataset), dataset_len=cfg.train.len_eval, max_images=cfg.train.max_images // 2)
+            eval_batch_sampler = DynamicBatchSampler(len(eval_dataset), dataset_len=cfg.train.len_eval, 
+                                                     max_images=cfg.train.max_images // 2 , images_per_seq = cfg.train.images_per_seq)
         else:
             eval_batch_sampler = FixBatchSampler(eval_dataset, dataset_len=cfg.train.len_eval, max_images=cfg.train.max_images // 2)
         eval_dataloader = torch.utils.data.DataLoader(eval_dataset, batch_sampler=eval_batch_sampler, 
@@ -162,6 +173,8 @@ def train_fn(cfg: DictConfig):
 
     ########################################################
     # eval_dataset.__getitem__((10, 8))
+    # print("Go through the eval dataset")
+    # dataset.__getitem__((21, 8))
     
     # def profile_function(dataset):
     #     images_per_seq = list(range(3,20))
@@ -209,12 +222,19 @@ def train_fn(cfg: DictConfig):
     num_epochs = cfg.train.epochs
 
     # Define the optimizer
-    optimizer = torch.optim.AdamW(params=model.parameters(), lr=cfg.train.lr/10)
     
-    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer=optimizer, max_lr=cfg.train.lr, 
-                                                    epochs=num_epochs, steps_per_epoch=len(dataloader))
+    if cfg.train.warmup_sche:
+        optimizer = torch.optim.AdamW(params=model.parameters(), lr=cfg.train.lr)
+        lr_scheduler = WarmupCosineRestarts(optimizer=optimizer, T_0=cfg.train.restart_num, 
+                                            iters_per_epoch=len(dataloader), warmup_ratio = 0.1)
+    else:
+        optimizer = torch.optim.AdamW(params=model.parameters(), lr=cfg.train.lr/10)
+        
+        lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer=optimizer, max_lr=cfg.train.lr, 
+                                                        epochs=num_epochs, steps_per_epoch=len(dataloader))
 
 
+    
     # for data in dataloader: 
     #     # dataloader.batch_size
     #     import pdb;pdb.set_trace()
@@ -223,29 +243,34 @@ def train_fn(cfg: DictConfig):
 
     model, dataloader, optimizer, lr_scheduler = accelerator.prepare(model, dataloader, optimizer, lr_scheduler)  
     
-    print(f"xxxxxxxxxxxxxxxxxx dataloader has {dataloader.num_workers} num_workers")
+    accelerator.print(f"xxxxxxxxxxxxxxxxxx dataloader has {dataloader.num_workers} num_workers")
 
     start_epoch = 0
 
+
     if cfg.train.resume_ckpt:
         checkpoint = torch.load(cfg.train.resume_ckpt)  # Adjust this path as necessary
-        try:
-            model.load_state_dict(checkpoint["model_state_dict"], strict=True)
-            optimizer.load_state_dict(checkpoint["optimizer_state_dict"], strict=True)
+        # try:
+        #     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+        #     optimizer.load_state_dict(checkpoint["optimizer_state_dict"], strict=True)
             
-            if "lr_scheduler_state_dict" in checkpoint:
-                lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+        #     if "lr_scheduler_state_dict" in checkpoint:
+        #         lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
                 
-            # Restore epoch number (if present)
-            if "epoch" in checkpoint:
-                start_epoch = checkpoint["epoch"]
+        #     # Restore epoch number (if present)
+        #     if "epoch" in checkpoint:
+        #         start_epoch = checkpoint["epoch"]
+        # except:
+        try:
+            model.load_state_dict(prefix_with_module(checkpoint), strict=True)
         except:
             model.load_state_dict(checkpoint, strict=True)
+            
         
         accelerator.print(f"Successfully resumed from checkpoint at epoch {start_epoch}")
 
     
-    to_plot = ("loss", "lr", "Racc_5", "Racc_15", "Racc_30","Tacc_5", "Tacc_15", "Tacc_30",)
+    to_plot = ("loss", "lr", "Racc_5", "Racc_15", "Racc_30","Tacc_5", "Tacc_15", "Tacc_30", "sec/it")
     
     stats = VizStats(to_plot)
     
@@ -255,8 +280,8 @@ def train_fn(cfg: DictConfig):
         set_seed_and_print(cfg.seed + epoch)
 
         # Evaluation        
-        # if (epoch!=0) and (epoch%cfg.train.eval_interval ==0):
-        if (epoch%cfg.train.eval_interval ==0):
+        if (epoch!=0) and (epoch%cfg.train.eval_interval ==0):
+        # if (epoch%cfg.train.eval_interval ==0):
             accelerator.print(f"----------Start to eval at epoch {epoch}----------")
             _train_or_eval_fn(model, eval_dataloader, cfg, optimizer, stats, accelerator, lr_scheduler, training = False, visualize = False)
             accelerator.print(f"----------Finish the eval at epoch {epoch}----------")
@@ -301,7 +326,12 @@ def _train_or_eval_fn(model, dataloader, cfg, optimizer, stats, accelerator, lr_
 
     # print(f"Start the loop for process {accelerator.process_index}")
     
+    time_start = time.time()
+    max_it = len(dataloader)
+
     for step, batch in enumerate(dataloader):
+        # with accelerator.accumulate(model):
+
         # print(f"Start the data processing for process {accelerator.process_index} at step {step}")
         images = batch["image"].to(accelerator.device)
         crop_params = batch["crop_params"].to(accelerator.device)
@@ -310,30 +340,34 @@ def _train_or_eval_fn(model, dataloader, cfg, optimizer, stats, accelerator, lr_
         fl = batch["fl"].to(accelerator.device)
         pp = batch['pp'].to(accelerator.device)
         
-        batch_size = len(images)
         frame_size = images.shape[1]
         
         # NOTE Do we really need batch repeat?
-        
-        gt_cameras = PerspectiveCameras(
-                focal_length=fl.reshape(-1,2),
-                R=rotation.reshape(-1,3,3),
-                T=translation.reshape(-1,3),
-                device=accelerator.device)
-
-
-        # print(f"Start the model running for process {accelerator.process_index} at step {step}")
+        if training and cfg.train.batch_repeat > 0:
+            br = cfg.train.batch_repeat
+            gt_cameras = PerspectiveCameras(
+                    focal_length=fl.reshape(-1,2).repeat(br, 1),
+                    R=rotation.reshape(-1,3,3).repeat(br, 1, 1),
+                    T=translation.reshape(-1,3).repeat(br, 1),
+                    device=accelerator.device)
+            batch_size = len(images) * br
+        else:
+            gt_cameras = PerspectiveCameras(
+                    focal_length=fl.reshape(-1,2),
+                    R=rotation.reshape(-1,3,3),
+                    T=translation.reshape(-1,3),
+                    device=accelerator.device)
+            batch_size = len(images)
+            
         if training:
-            predictions = model(images, gt_cameras=gt_cameras, training=True)
+            predictions = model(images, gt_cameras=gt_cameras, training=True, batch_repeat=cfg.train.batch_repeat)
             predictions["loss"] = predictions["loss"].mean()
             loss = predictions["loss"]
         else:
             with torch.no_grad():
                 predictions = model(images, training=False)
-
             
         pred_cameras = predictions["pred_cameras"]
-        # print(f"Start the metric computation for process {accelerator.process_index} at step {step}")
 
         rel_rangle_deg, rel_tangle_deg = camera_to_rel_deg(pred_cameras, gt_cameras, accelerator, batch_size)
 
@@ -355,8 +389,6 @@ def _train_or_eval_fn(model, dataloader, cfg, optimizer, stats, accelerator, lr_
 
 
         if visualize:
-            # print(f"Start the visualization for process {accelerator.process_index} at step {step}")
-
             camera_dict = {"pred_cameras": {},"gt_cameras": {},}
             
             for visidx in range(frame_size):
@@ -369,24 +401,22 @@ def _train_or_eval_fn(model, dataloader, cfg, optimizer, stats, accelerator, lr_
             show_img = view_color_coded_images_for_visdom(images[0])
             viz.images(show_img, env=cfg.exp_name, win="imgs")
 
-        # print(f"Start the printing for process {accelerator.process_index} at step {step}")
         if training:
-            stats.update(predictions, stat_set="train")
+            stats.update(predictions, time_start=time_start, stat_set="train")
             if step%cfg.train.print_interval==0:
-                accelerator.print(stats.get_status_string(stat_set="train"))
+                accelerator.print(stats.get_status_string(stat_set="train",max_it=max_it))
         else:
-            stats.update(predictions, stat_set="eval")
+            stats.update(predictions, time_start=time_start, stat_set="eval")
             if step%cfg.train.print_interval==0:
-                accelerator.print(stats.get_status_string(stat_set="eval"))
+                accelerator.print(stats.get_status_string(stat_set="eval",max_it=max_it))
                 
         if training:   
-            # print(f"Start the backpropagation for process {accelerator.process_index} at step {step}")
-            # Backward pass and optimization
+            optimizer.zero_grad()
             accelerator.backward(loss)
-            accelerator.clip_grad_norm_(model.parameters(), cfg.train.clip_grad)
+            if cfg.train.clip_grad>0 and accelerator.sync_gradients:
+                accelerator.clip_grad_norm_(model.parameters(), cfg.train.clip_grad)
             optimizer.step()
             lr_scheduler.step()
-            optimizer.zero_grad()
 
     return True
 

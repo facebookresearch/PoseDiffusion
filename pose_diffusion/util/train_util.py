@@ -46,39 +46,54 @@ from pytorch3d.implicitron.tools.config import (
 from omegaconf import DictConfig
 from datasets.co3d_v2 import Co3dDataset, TRAINING_CATEGORIES
 from torch.utils.data import BatchSampler
+from griddle.utils import is_aws_cluster
+
 
 logger = logging.getLogger(__name__)
 
 
 def get_co3d_dataset(cfg):
 
+    if is_aws_cluster():
+        CO3D_DIR = cfg.train.CO3D_DIR
+        CO3D_ANNOTATION_DIR = cfg.train.CO3D_ANNOTATION_DIR
+    else:
+        CO3D_DIR = "/datasets01/co3dv2/080422/"
+        CO3D_ANNOTATION_DIR = "/private/home/jianyuan/src/relpose/data/co3d_annotations"
+        
     dataset = Co3dDataset(
             category=(cfg.train.category,),
             split="train",
-            min_num_images=20,
+            min_num_images=cfg.train.min_num_images,
             debug=False,
             img_size=cfg.train.img_size,
             normalize_cameras=cfg.train.normalize_cameras,
             mask_images=False,
-            # CO3D_DIR = "/fsx-repligen/shared/datasets/co3d/",
-            CO3D_DIR = "/datasets01/co3dv2/080422/",
-            CO3D_ANNOTATION_DIR = "/fsx-repligen/jianyuan/datasets/co3d_relpose/",
+            CO3D_DIR = CO3D_DIR,
+            CO3D_ANNOTATION_DIR = CO3D_ANNOTATION_DIR,
             preload_image = cfg.train.preload_image,
+            first_camera_transform = cfg.train.first_camera_transform,
+            compute_optical = cfg.train.compute_optical,
+            color_aug = cfg.train.color_aug, 
+            erase_aug = cfg.train.erase_aug,
         )
     
     eval_dataset = Co3dDataset(
             category=(cfg.train.category,),
             split="test",
             eval_time = True,
-            min_num_images=20,
+            min_num_images=cfg.train.min_num_images,
             debug=False,
             img_size=cfg.train.img_size,
             normalize_cameras=cfg.train.normalize_cameras,
             mask_images=False,
-            CO3D_DIR = "/datasets01/co3dv2/080422/",
-            # CO3D_DIR = "/fsx-repligen/shared/datasets/co3d/",
-            CO3D_ANNOTATION_DIR = "/fsx-repligen/jianyuan/datasets/co3d_relpose/",
+            CO3D_DIR = CO3D_DIR,
+            CO3D_ANNOTATION_DIR = CO3D_ANNOTATION_DIR,
             preload_image = cfg.train.preload_image,
+            first_camera_transform = cfg.train.first_camera_transform,
+            compute_optical = cfg.train.compute_optical,
+            color_aug = cfg.train.color_aug, 
+            erase_aug = cfg.train.erase_aug,
         )
 
     return dataset, eval_dataset
@@ -372,14 +387,12 @@ def closed_form_inverse(se3):
 
 
 
-
-
 class WarmupCosineRestarts(torch.optim.lr_scheduler._LRScheduler):
-    def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, warmup_ratio=0.1, warmup_lr_init=1e-7, last_epoch=-1):
-        self.T_0 = T_0
+    def __init__(self, optimizer, T_0, iters_per_epoch, T_mult=1, eta_min=0, warmup_ratio=0.1, warmup_lr_init=1e-7, last_epoch=-1):
+        self.T_0 = T_0 * iters_per_epoch
         self.T_mult = T_mult
         self.eta_min = eta_min
-        self.warmup_epochs = int(T_0 * warmup_ratio)
+        self.warmup_iters = int(T_0 * warmup_ratio * iters_per_epoch)
         self.warmup_lr_init = warmup_lr_init
         super(WarmupCosineRestarts, self).__init__(optimizer, last_epoch)
 
@@ -391,15 +404,14 @@ class WarmupCosineRestarts(torch.optim.lr_scheduler._LRScheduler):
             n = int(math.log((self.last_epoch / self.T_0 * (self.T_mult - 1) + 1), self.T_mult))
             T_cur = self.last_epoch - self.T_0 * (self.T_mult ** n - 1) // (self.T_mult - 1)
 
-        if T_cur < self.warmup_epochs:
-            warmup_ratio = T_cur / self.warmup_epochs
+        if T_cur < self.warmup_iters:
+            warmup_ratio = T_cur / self.warmup_iters
             return [self.warmup_lr_init + (base_lr - self.warmup_lr_init) * warmup_ratio for base_lr in self.base_lrs]
         else:
-            T_cur_adjusted = T_cur - self.warmup_epochs
-            T_i = self.T_0 - self.warmup_epochs
+            T_cur_adjusted = T_cur - self.warmup_iters
+            T_i = self.T_0 - self.warmup_iters
             return [self.eta_min + (base_lr - self.eta_min) * (1 + math.cos(math.pi * T_cur_adjusted / T_i)) / 2
                     for base_lr in self.base_lrs]
-            
 
 
 

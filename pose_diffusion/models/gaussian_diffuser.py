@@ -388,6 +388,7 @@ class GaussianDiffusion(nn.Module):
         loss = self.loss_fn(model_out, target, reduction="none")
         # loss = reduce(loss, "b ... -> b (...)", "mean")
         # loss = loss * extract(self.p2_loss_weight, t, loss.shape)
+        
         return {
             "loss": loss,
             "noise": noise,

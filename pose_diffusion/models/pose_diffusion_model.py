@@ -76,6 +76,19 @@ class PoseDiffusionModel(nn.Module):
 
         self.target_dim = denoiser.target_dim
 
+        self.apply(self._init_weights)
+
+        
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
+
     def forward(
         self,
         image: torch.Tensor,
@@ -84,6 +97,7 @@ class PoseDiffusionModel(nn.Module):
         cond_fn=None,
         cond_start_step=0,
         training = True, 
+        batch_repeat = -1,
     ):
         """
         Forward pass of the PoseDiffusionModel.
@@ -107,18 +121,21 @@ class PoseDiffusionModel(nn.Module):
         shapelist = list(image.shape)
         batch_size = len(image)    
         if training:
-            pose_encoding = camera_to_pose_encoding(gt_cameras, pose_encoding_type=self.pose_encoding_type)
-            pose_encoding = pose_encoding.reshape(batch_size, -1, self.target_dim)
-            
             reshaped_image = image.reshape(shapelist[0]*shapelist[1], *shapelist[2:])
-
             z = self.image_feature_extractor(reshaped_image).reshape(batch_size, shapelist[1], -1)
+
+            pose_encoding = camera_to_pose_encoding(gt_cameras, pose_encoding_type=self.pose_encoding_type)
             
-            
+            if batch_repeat > 0:
+                pose_encoding = pose_encoding.reshape(batch_size*batch_repeat, -1, self.target_dim)
+                z = z.repeat(batch_repeat, 1, 1)
+            else:
+                pose_encoding = pose_encoding.reshape(batch_size, -1, self.target_dim)
+
             diffusion_results = self.diffuser(pose_encoding, z=z)
             
-            diffusion_results["pred_cameras"] = pose_encoding_to_camera(
-                    diffusion_results["x_0_pred"], pose_encoding_type=self.pose_encoding_type)
+            diffusion_results["pred_cameras"] = pose_encoding_to_camera(diffusion_results["x_0_pred"], pose_encoding_type=self.pose_encoding_type)
+            
             return diffusion_results
         else:
             reshaped_image = image.reshape(shapelist[0]*shapelist[1], *shapelist[2:])
