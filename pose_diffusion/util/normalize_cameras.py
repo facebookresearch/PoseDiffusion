@@ -51,10 +51,6 @@ def compute_optical_axis_intersection(cameras):
 
     pp = cameras.unproject_points(optical_axis, from_ndc=True, world_coordinates=True)
 
-    # pp0 = torch.zeros((pp.shape[0], 3))
-    # for i in range(0, pp.shape[0]): pp0[i] = pp[i][i]
-    # pp2 = pp.diagonal(dim1=0, dim2=1)
-
     pp2 = pp[torch.arange(pp.shape[0]), torch.arange(pp.shape[0])]
 
     directions = pp2 - centers

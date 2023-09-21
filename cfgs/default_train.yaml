@@ -1,6 +1,13 @@
 seed: 0
 
+
+
 train:
+    # Please Specify Your Own Path
+    CO3D_DIR: "/datasets01/co3dv2/080422/"
+    CO3D_ANNOTATION_DIR: "/fsx-repligen/jianyuan/datasets/co3d_relpose/"
+    
+
     img_size: 224
     category: all
     restart_num: 50
@@ -19,9 +26,6 @@ train:
 
     max_images: 512
     normalize_cameras: True
-    dynamic_batch: True
-    pt3d_co3d: False
-
     persistent_workers: True
 
     pin_memory: False
@@ -35,10 +39,7 @@ train:
     color_aug: True
     erase_aug: False
     batch_repeat: 90
-    warmup_sche: True
-    CO3D_DIR: "/datasets01/co3dv2/080422/"
-    CO3D_ANNOTATION_DIR: "/fsx-repligen/jianyuan/datasets/co3d_relpose/"
-    
+
 debug: False
 
 

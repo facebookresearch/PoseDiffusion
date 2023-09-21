@@ -34,7 +34,7 @@ from visdom import Visdom
 
 
 @hydra.main(config_path="../cfgs/", config_name="default")
-def main(cfg: DictConfig) -> None:
+def demo(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
@@ -144,8 +144,8 @@ def main(cfg: DictConfig) -> None:
         ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
         print(f"For {folder_path}: the absolute rotation error is {ARE:.6f} degrees.")
     else:
-        print(f"GT not provided.")
+        print(f"No GT provided. No evaluation conducted.")
 
 
 if __name__ == "__main__":
-    main()
+    demo()

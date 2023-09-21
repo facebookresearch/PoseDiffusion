@@ -29,9 +29,7 @@ import models
 from hydra.utils import instantiate
 from pytorch3d.renderer.cameras import PerspectiveCameras
 
-
 logger = logging.getLogger(__name__)
-
 
 class PoseDiffusionModel(nn.Module):
     def __init__(self, pose_encoding_type: str, IMAGE_FEATURE_EXTRACTOR: Dict, DIFFUSER: Dict, DENOISER: Dict):
