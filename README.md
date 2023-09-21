@@ -6,7 +6,7 @@
 [<a href="https://posediffusion.github.io/" rel="nofollow">Project Page</a>]</p>
 
 ## Installation
-We provide a simple installation script, which assumes Python 3.9 and CUDA 11.6 now.
+We provide a simple installation script which by default installs a conda env of Python 3.9, PyTorch 1.13 and CUDA 11.6.
 
 ```.bash
 source install.sh
@@ -14,41 +14,43 @@ source install.sh
 
 ## Quick Start
 
-The model ckpt trained on Co3D is available in [dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
+Download the model checkpoint trained on Co3D from [Dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
 
-An example usage is as below:
+Here's an example of how to use it:
 
 ```.bash
 python demo.py image_folder="samples/apple" ckpt="/PATH/TO/DOWNLOADED/CKPT"
 ```
 
-Feel free to test on your data by specifying image_folder. 
+Feel free to test with your own data by specifying a different `image_folder`. 
 
-Using a Quadro GP100 GPU, the inference time for a 20-frame sequence wo GGS is around 0.8 second, with GGS is around 80 seconds (including the time of 20-seconds matching extration). 
+Using a Quadro GP100 GPU, the inference time for a 20-frame sequence without GGS is approximately 0.8 seconds, and with GGS it’s around 80 seconds (including 20 seconds for matching extraction).
 
-You can choose to enable GGS or not in ```/cfgs/default.yaml```.
+You can choose to enable or disable GGS in `./cfgs/default.yaml`.
 
-By default, we use [Visdom](https://github.com/fossasia/visdom) for the visualization of cameras. Please check your setting of Visdom to conduct visualization properly.
+We use [Visdom](https://github.com/fossasia/visdom) by default for visualization. Please ensure that your Visdom settings are correctly configured to visualize the results accurately; however, Visdom is not necessary for running the model.
 
 ## Training
 
-Please first follow the instruction [here](https://github.com/amyxlase/relpose-plus-plus#pre-processing-co3d) to preprocess the annotations of Co3D, which will save a lot of time for data processing during training.
+Start by following the instructions [here](https://github.com/amyxlase/relpose-plus-plus#pre-processing-co3d) to preprocess the annotations of Co3D V2 dataset. This will significantly reduce data processing time during training.
 
-Then specify the ```CO3D_DIR``` and ```CO3D_ANNOTATION_DIR``` in ```/cfgs/default_train.yaml```.
+Next, specify the paths `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/default_train.yaml`.
 
-Now you simply start to train by:
+Now, you can start training with:
 
-```
+```bash
 python train.py
 ```
 
-All the configurations would be specified inside ```/cfgs/default_train.yaml```.
+All configurations are specified inside `./cfgs/default_train.yaml`.
 
-For multi-gpu training, please launch the training script by [accelerate](https://huggingface.co/docs/accelerate/basic_tutorials/launch), e.g., training on 8 gpus (processes) in 1 node (machines).
+For multi-GPU training, launch the training script using [accelerate](https://huggingface.co/docs/accelerate/basic_tutorials/launch), e.g., training on 8 GPUs (processes) in 1 node (machines).
 
-```
+```bash
 accelerate launch train.py --num_processes=8 --multi_gpu --num_machines=1
 ```
+
+Please notice that we use Visdom to record logs.
 
 ## Changelog
 
@@ -64,8 +66,3 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 ## License
 See the [LICENSE](./LICENSE) file for details about the license under which this code is made available.
 
-
-## TODO
-
-:white_check_mark: Training Pipeline
-- [ ] Evaluation Pipeline
