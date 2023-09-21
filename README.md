@@ -36,7 +36,7 @@ Start by following the instructions [here](https://github.com/amyxlase/relpose-p
 
 Next, specify the paths `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/default_train.yaml`.
 
-Now, you can start training with:
+Now, you can start 1-GPU training with:
 
 ```bash
 python train.py
