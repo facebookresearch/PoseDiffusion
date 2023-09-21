@@ -26,12 +26,7 @@ _RESNET_STD = [0.229, 0.224, 0.225]
 
 
 class MultiScaleImageFeatureExtractor(nn.Module):
-    def __init__(
-        self,
-        modelname: str = "dino_vits16",
-        freeze: bool = False,
-        scale_factors: list = [1, 1 / 2, 1 / 3],
-    ):
+    def __init__(self, modelname: str = "dino_vits16", freeze: bool = False, scale_factors: list = [1, 1 / 2, 1 / 3]):
         super().__init__()
         self.freeze = freeze
         self.scale_factors = scale_factors
@@ -49,15 +44,8 @@ class MultiScaleImageFeatureExtractor(nn.Module):
         else:
             raise ValueError(f"Unknown model name {modelname}")
 
-        for name, value in (
-            ("_resnet_mean", _RESNET_MEAN),
-            ("_resnet_std", _RESNET_STD),
-        ):
-            self.register_buffer(
-                name,
-                torch.FloatTensor(value).view(1, 3, 1, 1),
-                persistent=False,
-            )
+        for name, value in (("_resnet_mean", _RESNET_MEAN), ("_resnet_std", _RESNET_STD)):
+            self.register_buffer(name, torch.FloatTensor(value).view(1, 3, 1, 1), persistent=False)
 
         if self.freeze:
             for param in self.parameters():
@@ -74,15 +62,11 @@ class MultiScaleImageFeatureExtractor(nn.Module):
     def _resnet_normalize_image(self, img: torch.Tensor) -> torch.Tensor:
         return (img - self._resnet_mean) / self._resnet_std
 
-    def _compute_multiscale_features(
-        self, img_normed: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_multiscale_features(self, img_normed: torch.Tensor) -> torch.Tensor:
         multiscale_features = None
 
         if len(self.scale_factors) <= 0:
-            raise ValueError(
-                f"Wrong format of self.scale_factors: {self.scale_factors}"
-            )
+            raise ValueError(f"Wrong format of self.scale_factors: {self.scale_factors}")
 
         for scale_factor in self.scale_factors:
             if scale_factor == 1:
@@ -100,9 +84,4 @@ class MultiScaleImageFeatureExtractor(nn.Module):
 
     @staticmethod
     def _resize_image(image: torch.Tensor, scale_factor: float) -> torch.Tensor:
-        return nn.functional.interpolate(
-            image,
-            scale_factor=scale_factor,
-            mode="bilinear",
-            align_corners=False,
-        )
+        return nn.functional.interpolate(image, scale_factor=scale_factor, mode="bilinear", align_corners=False)

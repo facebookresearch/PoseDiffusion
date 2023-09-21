@@ -1,4 +1,3 @@
-# ckpt: co3d_model1.pth
 seed: 0
 
 train:
@@ -9,7 +8,6 @@ train:
     resume_ckpt: False
     epochs: 100
     ckpt_interval: 5
-    mixed_precision: None
     num_workers: 8
 
     eval_interval: 5
@@ -41,11 +39,7 @@ train:
     CO3D_DIR: "/datasets01/co3dv2/080422/"
     CO3D_ANNOTATION_DIR: "/fsx-repligen/jianyuan/datasets/co3d_relpose/"
     
-
-
 debug: False
-profile: False
-
 
 
 MODEL:
@@ -69,7 +63,6 @@ MODEL:
             dropout:                0.1
             batch_first:            True
             norm_first:             True
-
 
     DIFFUSER:
         _target_: models.GaussianDiffusion

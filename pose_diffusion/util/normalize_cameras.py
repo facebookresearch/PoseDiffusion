@@ -9,12 +9,8 @@ def intersect_skew_line_groups(p, r, mask):
     # p, r both of shape (B, N, n_intersected_lines, 3)
     # mask of shape (B, N, n_intersected_lines)
     p_intersect, r = intersect_skew_lines_high_dim(p, r, mask=mask)
-    _, p_line_intersect = _point_line_distance(
-        p, r, p_intersect[..., None, :].expand_as(p)
-    )
-    intersect_dist_squared = ((p_line_intersect - p_intersect[..., None, :]) ** 2).sum(
-        dim=-1
-    )
+    _, p_line_intersect = _point_line_distance(p, r, p_intersect[..., None, :].expand_as(p))
+    intersect_dist_squared = ((p_line_intersect - p_intersect[..., None, :]) ** 2).sum(dim=-1)
     return p_intersect, p_line_intersect, intersect_dist_squared, r
 
 
@@ -34,7 +30,7 @@ def intersect_skew_lines_high_dim(p, r, mask=None):
     if torch.any(torch.isnan(p_intersect)):
         print(p_intersect)
         raise ValueError(f"p_intersect is NaN")
-    
+
     return p_intersect, r
 
 
@@ -61,7 +57,6 @@ def compute_optical_axis_intersection(cameras):
 
     pp2 = pp[torch.arange(pp.shape[0]), torch.arange(pp.shape[0])]
 
-
     directions = pp2 - centers
     centers = centers.unsqueeze(0).unsqueeze(0)
     directions = directions.unsqueeze(0).unsqueeze(0)
@@ -74,7 +69,7 @@ def compute_optical_axis_intersection(cameras):
     return p_intersect, dist, p_line_intersect, pp2, r
 
 
-def normalize_cameras(cameras, compute_optical = True, first_camera = True, scale=1.0, ):
+def normalize_cameras(cameras, compute_optical=True, first_camera=True, scale=1.0):
     """
     Normalizes cameras such that the optical axes point to the origin and the average
     distance to the origin is 1.
@@ -84,20 +79,18 @@ def normalize_cameras(cameras, compute_optical = True, first_camera = True, scal
     """
     # Let distance from first camera to origin be unit
     new_cameras = cameras.clone()
-        
+
     if compute_optical:
         new_transform = new_cameras.get_world_to_view_transform()
 
-        p_intersect, dist, p_line_intersect, pp, r = compute_optical_axis_intersection(
-            cameras
-        )
+        (p_intersect, dist, p_line_intersect, pp, r) = compute_optical_axis_intersection(cameras)
         t = Translate(p_intersect)
 
         scale = dist.squeeze()[0]
 
         # Degenerate case
         if scale == 0:
-            scale = torch.norm(new_cameras.T,dim=(0,1))
+            scale = torch.norm(new_cameras.T, dim=(0, 1))
             scale = torch.sqrt(scale)
             new_cameras.T = new_cameras.T / scale
         else:
@@ -105,13 +98,13 @@ def normalize_cameras(cameras, compute_optical = True, first_camera = True, scal
             new_cameras.R = new_matrix[:, :3, :3]
             new_cameras.T = new_matrix[:, 3, :3] / scale
     else:
-        scale = torch.norm(new_cameras.T,dim=(0,1))
+        scale = torch.norm(new_cameras.T, dim=(0, 1))
         scale = torch.sqrt(scale)
         new_cameras.T = new_cameras.T / scale
 
     if first_camera:
         new_cameras = first_camera_transform(new_cameras)
-        
+
     return new_cameras
 
 

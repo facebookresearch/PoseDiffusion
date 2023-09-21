@@ -36,12 +36,7 @@ class Denoiser(nn.Module):
         self.time_embed = TimeStepEmbedding()
         self.pose_embed = PoseEmbedding(target_dim=self.target_dim)
 
-        first_dim = (
-            self.time_embed.out_dim
-            + self.pose_embed.out_dim
-            + z_dim
-            + int(self.pivot_cam_onehot)
-        )
+        first_dim = self.time_embed.out_dim + self.pose_embed.out_dim + z_dim + int(self.pivot_cam_onehot)
 
         d_model = TRANSFORMER.d_model
         self._first = nn.Linear(first_dim, d_model)
@@ -53,18 +48,9 @@ class Denoiser(nn.Module):
         self._trunk = instantiate(TRANSFORMER, _recursive_=False)
 
         # TODO: change the implementation of MLP to a more mature one
-        self._last = MLP(
-            d_model,
-            [mlp_hidden_dim, self.target_dim],
-            norm_layer=nn.LayerNorm,
-        )
+        self._last = MLP(d_model, [mlp_hidden_dim, self.target_dim], norm_layer=nn.LayerNorm)
 
-    def forward(
-        self,
-        x: torch.Tensor,  # B x N x dim
-        t: torch.Tensor,  # B
-        z: torch.Tensor,  # B x N x dim_z
-    ):
+    def forward(self, x: torch.Tensor, t: torch.Tensor, z: torch.Tensor):  # B x N x dim  # B  # B x N x dim_z
         B, N, _ = x.shape
 
         t_emb = self.time_embed(t)
@@ -137,9 +123,7 @@ class MLP(torch.nn.Sequential):
         in_channels: int,
         hidden_channels: List[int],
         norm_layer: Optional[Callable[..., torch.nn.Module]] = None,
-        activation_layer: Optional[
-            Callable[..., torch.nn.Module]
-        ] = torch.nn.ReLU,
+        activation_layer: Optional[Callable[..., torch.nn.Module]] = torch.nn.ReLU,
         inplace: Optional[bool] = True,
         bias: bool = True,
         norm_first: bool = False,

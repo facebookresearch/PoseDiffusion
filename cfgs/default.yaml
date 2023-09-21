@@ -1,0 +1,40 @@
+image_folder: samples/apple
+image_size: 224
+ckpt: co3d_model1.pth
+seed: 0
+
+GGS:
+    enable: True
+    start_step: 10
+    learning_rate: 0.01
+    iter_num: 100
+    sampson_max: 10
+    min_matches: 10
+    alpha: 0.0001
+
+
+MODEL:
+    _target_: models.PoseDiffusionModel
+
+    pose_encoding_type: absT_quaR_logFL
+
+    IMAGE_FEATURE_EXTRACTOR: 
+        _target_: models.MultiScaleImageFeatureExtractor
+        freeze: False
+
+    DENOISER: 
+        _target_: models.Denoiser
+        TRANSFORMER:
+            _target_:               models.TransformerEncoderWrapper
+            d_model:                512
+            nhead:                  4
+            dim_feedforward:        1024
+            num_encoder_layers:     8
+            dropout:                0.1
+            batch_first:            True
+            norm_first:             True
+
+
+    DIFFUSER:
+        _target_: models.GaussianDiffusion
+        beta_schedule: custom

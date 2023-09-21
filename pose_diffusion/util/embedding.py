@@ -11,20 +11,12 @@ class TimeStepEmbedding(nn.Module):
         self.dim = dim
         self.max_period = max_period
 
-        self.linear = nn.Sequential(
-            nn.Linear(dim, dim // 2),
-            nn.SiLU(),
-            nn.Linear(dim // 2, dim // 2),
-        )
+        self.linear = nn.Sequential(nn.Linear(dim, dim // 2), nn.SiLU(), nn.Linear(dim // 2, dim // 2))
 
         self.out_dim = dim // 2
 
     def _compute_freqs(self, half):
-        freqs = torch.exp(
-            -math.log(self.max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        )
+        freqs = torch.exp(-math.log(self.max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half)
         return freqs
 
     def forward(self, timesteps):
@@ -33,9 +25,7 @@ class TimeStepEmbedding(nn.Module):
         args = timesteps[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if self.dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
+            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
 
         output = self.linear(embedding)
         return output
@@ -45,9 +35,7 @@ class PoseEmbedding(nn.Module):
     def __init__(self, target_dim, n_harmonic_functions=10, append_input=True):
         super().__init__()
 
-        self._emb_pose = HarmonicEmbedding(
-            n_harmonic_functions=n_harmonic_functions, append_input=append_input
-        )
+        self._emb_pose = HarmonicEmbedding(n_harmonic_functions=n_harmonic_functions, append_input=append_input)
 
         self.out_dim = self._emb_pose.get_output_dim(target_dim)
 
