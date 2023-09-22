@@ -52,12 +52,6 @@ accelerate launch train.py --num_processes=8 --multi_gpu --num_machines=1
 
 Please notice that we use Visdom to record logs.
 
-## Changelog
-
-### Co3D Model V1 (2023-04-18)
-- Switched to encoder-only transformer 
-- Adopted a different method for time embedding and pose embedding
-
 ## Acknowledgement
 
 Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch), [guided-diffusion](https://github.com/openai/guided-diffusion), [hloc](https://github.com/cvg/Hierarchical-Localization), [relpose](https://github.com/jasonyzhang/relpose).
