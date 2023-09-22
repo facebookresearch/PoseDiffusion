@@ -1,3 +1,9 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 import torch
 from typing import Dict, List, Optional, Union
 from util.camera_transform import pose_encoding_to_camera
@@ -5,7 +11,12 @@ from util.get_fundamental_matrix import get_fundamental_matrices
 from pytorch3d.renderer.cameras import CamerasBase, PerspectiveCameras
 
 
-def geometry_guided_sampling(model_mean: torch.Tensor, t: int, matches_dict: Dict, GGS_cfg: Dict):
+def geometry_guided_sampling(
+    model_mean: torch.Tensor,
+    t: int,
+    matches_dict: Dict,
+    GGS_cfg: Dict,
+):
     # pre-process matches
     b, c, h, w = matches_dict["img_shape"]
     device = model_mean.device
@@ -26,7 +37,9 @@ def geometry_guided_sampling(model_mean: torch.Tensor, t: int, matches_dict: Dic
     kp1_homo = _to_homogeneous(kp1)
     kp2_homo = _to_homogeneous(kp2)
 
-    i1, i2 = [i.reshape(-1) for i in torch.meshgrid(torch.arange(b), torch.arange(b))]
+    i1, i2 = [
+        i.reshape(-1) for i in torch.meshgrid(torch.arange(b), torch.arange(b))
+    ]
 
     processed_matches = {
         "kp1_homo": kp1_homo,
@@ -38,33 +51,41 @@ def geometry_guided_sampling(model_mean: torch.Tensor, t: int, matches_dict: Dic
         "pair_idx": pair_idx,
     }
 
-    # import time
-    # start_time = time.time()
-
     # conduct GGS
-    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)  # 200
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
 
     # Optimize FL, R, and T separately
-    model_mean = GGS_optimize(  # 100
-        model_mean, t, processed_matches, update_T=False, update_R=False, update_FL=True, **GGS_cfg
+    model_mean = GGS_optimize(
+        model_mean,
+        t,
+        processed_matches,
+        update_T=False,
+        update_R=False,
+        update_FL=True,
+        **GGS_cfg,
     )  # only optimize FL
 
-    model_mean = GGS_optimize(  # 100
-        model_mean, t, processed_matches, update_T=False, update_R=True, update_FL=False, **GGS_cfg
+    model_mean = GGS_optimize(
+        model_mean,
+        t,
+        processed_matches,
+        update_T=False,
+        update_R=True,
+        update_FL=False,
+        **GGS_cfg,
     )  # only optimize R
 
-    model_mean = GGS_optimize(  # 100
-        model_mean, t, processed_matches, update_T=True, update_R=False, update_FL=False, **GGS_cfg
+    model_mean = GGS_optimize(
+        model_mean,
+        t,
+        processed_matches,
+        update_T=True,
+        update_R=False,
+        update_FL=False,
+        **GGS_cfg,
     )  # only optimize T
 
-    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)  # 200
-
-    # end_time = time.time()
-    # elapsed_time = end_time - start_time
-    # print("Time taken: {:.4f} seconds".format(elapsed_time/700))
-
-    model_mean = normalize_quaternions(model_mean)
-
+    model_mean = GGS_optimize(model_mean, t, processed_matches, **GGS_cfg)
     return model_mean
 
 
@@ -90,7 +111,9 @@ def GGS_optimize(
         if update_R and update_T and update_FL:
             iter_num = iter_num * 2
 
-        optimizer = torch.optim.SGD([model_mean], lr=learning_rate, momentum=0.9)
+        optimizer = torch.optim.SGD(
+            [model_mean], lr=learning_rate, momentum=0.9
+        )
         batch_size = model_mean.shape[1]
 
         for _ in range(iter_num):
@@ -108,7 +131,9 @@ def GGS_optimize(
             if min_matches > 0:
                 valid_match_per_frame = len(valid_sampson) / batch_size
                 if valid_match_per_frame < min_matches:
-                    print("Drop this pair because of insufficient valid matches")
+                    print(
+                        "Drop this pair because of insufficient valid matches"
+                    )
                     break
 
             loss = valid_sampson.mean()
@@ -143,7 +168,9 @@ def compute_sampson_distance(
     camera = pose_encoding_to_camera(model_mean, pose_encoding_type)
 
     # pick the mean of the predicted focal length
-    camera.focal_length = camera.focal_length.mean(dim=0).repeat(len(camera.focal_length), 1)
+    camera.focal_length = camera.focal_length.mean(dim=0).repeat(
+        len(camera.focal_length), 1
+    )
 
     if not update_R:
         camera.R = camera.R.detach()
@@ -155,29 +182,34 @@ def compute_sampson_distance(
         camera.focal_length = camera.focal_length.detach()
 
     kp1_homo, kp2_homo, i1, i2, he, wi, pair_idx = processed_matches.values()
-    F_2_to_1 = get_fundamental_matrices(camera, he, wi, i1, i2, l2_normalize_F=False)
+    F_2_to_1 = get_fundamental_matrices(
+        camera, he, wi, i1, i2, l2_normalize_F=False
+    )
     F = F_2_to_1.permute(0, 2, 1)  # y1^T F y2 = 0
 
     def _sampson_distance(F, kp1_homo, kp2_homo, pair_idx):
         left = torch.bmm(kp1_homo[:, None], F[pair_idx])
         right = torch.bmm(F[pair_idx], kp2_homo[..., None])
 
-        bottom = left[:, :, 0].square() + left[:, :, 1].square() + right[:, 0, :].square() + right[:, 1, :].square()
+        bottom = (
+            left[:, :, 0].square()
+            + left[:, :, 1].square()
+            + right[:, 0, :].square()
+            + right[:, 1, :].square()
+        )
         top = torch.bmm(left, kp2_homo[..., None]).square()
 
         sampson = top[:, 0] / bottom
         return sampson
 
-    sampson = _sampson_distance(F, kp1_homo.float(), kp2_homo.float(), pair_idx)
+    sampson = _sampson_distance(
+        F,
+        kp1_homo.float(),
+        kp2_homo.float(),
+        pair_idx,
+    )
 
     sampson_to_print = sampson.detach().clone().clamp(max=sampson_max).mean()
-
     sampson = sampson[sampson < sampson_max]
+
     return sampson, sampson_to_print
-
-
-def normalize_quaternions(model_mean: torch.Tensor) -> torch.Tensor:
-    quaternions = model_mean[:, :, 3:7]
-    normalized_quaternions = quaternions / quaternions.norm(dim=-1, keepdim=True)
-    model_mean[:, :, 3:7] = normalized_quaternions
-    return model_mean

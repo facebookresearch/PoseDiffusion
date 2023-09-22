@@ -1,12 +1,32 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 import os
 import numpy as np
 from PIL import Image
 import torch
 import torch.nn.functional as F
-from typing import Any, ClassVar, Dict, Iterable, List, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+    Union,
+)
 
 
-def load_and_preprocess_images(folder_path: str, image_size: int = 224, mode: str = "bilinear") -> torch.Tensor:
+def load_and_preprocess_images(
+    folder_path: str, image_size: int = 224, mode: str = "bilinear"
+) -> torch.Tensor:
     image_paths = [
         os.path.join(folder_path, file)
         for file in os.listdir(folder_path)
@@ -17,11 +37,9 @@ def load_and_preprocess_images(folder_path: str, image_size: int = 224, mode: st
     images = []
     bboxes_xyxy = []
     scales = []
-    raw_image = []
     for path in image_paths:
         image = _load_image(path)
-        raw_image.append(image)
-        image, bbox_xyxy, min_hw, h, w = _center_crop_square(image)
+        image, bbox_xyxy, min_hw = _center_crop_square(image)
         minscale = image_size / min_hw
 
         imre = F.interpolate(
@@ -39,8 +57,6 @@ def load_and_preprocess_images(folder_path: str, image_size: int = 224, mode: st
 
     # assume all the images have the same shape for GGS
     image_info = {
-        "rawimg": raw_image,
-        "rawsize": (h, w),
         "size": (min_hw, min_hw),
         "bboxes_xyxy": np.stack(bboxes_xyxy),
         "resized_scales": np.stack(scales),
@@ -71,12 +87,19 @@ def _center_crop_square(image: np.ndarray) -> np.ndarray:
 
     # the format from xywh to xyxy
     bbox_xyxy = _clamp_box_to_image_bounds_and_round(
-        _get_clamp_bbox(bbox_xywh, box_crop_context=0.0), image_size_hw=(h, w)
+        _get_clamp_bbox(
+            bbox_xywh,
+            box_crop_context=0.0,
+        ),
+        image_size_hw=(h, w),
     )
-    return cropped_image, bbox_xyxy, min_dim, h, w
+    return cropped_image, bbox_xyxy, min_dim
 
 
-def _get_clamp_bbox(bbox: torch.Tensor, box_crop_context: float = 0.0) -> torch.Tensor:
+def _get_clamp_bbox(
+    bbox: torch.Tensor,
+    box_crop_context: float = 0.0,
+) -> torch.Tensor:
     # box_crop_context: rate of expansion for bbox
     # returns possibly expanded bbox xyxy as float
 
@@ -92,15 +115,21 @@ def _get_clamp_bbox(bbox: torch.Tensor, box_crop_context: float = 0.0) -> torch.
         bbox[3] += bbox[3] * c
 
     if (bbox[2:] <= 1.0).any():
-        raise ValueError(f"squashed image!! The bounding box contains no pixels.")
+        raise ValueError(
+            f"squashed image!! The bounding box contains no pixels."
+        )
 
-    bbox[2:] = torch.clamp(bbox[2:], 2)  # set min height, width to 2 along both axes
+    bbox[2:] = torch.clamp(
+        bbox[2:], 2
+    )  # set min height, width to 2 along both axes
     bbox_xyxy = _bbox_xywh_to_xyxy(bbox, clamp_size=2)
 
     return bbox_xyxy
 
 
-def _bbox_xywh_to_xyxy(xywh: torch.Tensor, clamp_size: Optional[int] = None) -> torch.Tensor:
+def _bbox_xywh_to_xyxy(
+    xywh: torch.Tensor, clamp_size: Optional[int] = None
+) -> torch.Tensor:
     xyxy = xywh.clone()
     if clamp_size is not None:
         xyxy[2:] = torch.clamp(xyxy[2:], clamp_size)
@@ -108,7 +137,10 @@ def _bbox_xywh_to_xyxy(xywh: torch.Tensor, clamp_size: Optional[int] = None) -> 
     return xyxy
 
 
-def _clamp_box_to_image_bounds_and_round(bbox_xyxy: torch.Tensor, image_size_hw: Tuple[int, int]) -> torch.LongTensor:
+def _clamp_box_to_image_bounds_and_round(
+    bbox_xyxy: torch.Tensor,
+    image_size_hw: Tuple[int, int],
+) -> torch.LongTensor:
     bbox_xyxy = bbox_xyxy.clone()
     bbox_xyxy[[0, 2]] = torch.clamp(bbox_xyxy[[0, 2]], 0, image_size_hw[-1])
     bbox_xyxy[[1, 3]] = torch.clamp(bbox_xyxy[[1, 3]], 0, image_size_hw[-2])

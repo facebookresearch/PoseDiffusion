@@ -1,3 +1,9 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 Adapted from code originally written by Jason Zhang.
 """
@@ -150,7 +156,6 @@ class Co3dDataset(Dataset):
         self.eval_time = eval_time
         self.normalize_cameras = normalize_cameras
         self.first_camera_transform = first_camera_transform
-        self.first_camera_rotation_only = first_camera_rotation_only
         self.mask_images = mask_images
         self.compute_optical = compute_optical
         self.color_aug = color_aug
