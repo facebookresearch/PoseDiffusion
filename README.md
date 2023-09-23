@@ -60,20 +60,21 @@ Next, specify the paths for `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/defa
   python train.py
   ```
   
-
 All configurations are specified inside `./cfgs/default_train.yaml`. Please notice that we use Visdom to record logs.
 
 ## Testing
 
+1. **Specify Paths**:
+
 Please specify the paths `CO3D_DIR`, `CO3D_ANNOTATION_DIR`, and `resume_ckpt` in `./cfgs/default_test.yaml`. The flag `resume_ckpt` refers to your downloaded model checkpoint.
 
-Then you can run testing over Co3D by:
+2. **Run Testing**:
 
 ```bash
 python test.py
 ```
 
-You can check different testing settings by adjusting `num_frames`, `GGS.enable`, and so on in `./cfgs/default_test.yaml`.
+You can check different testing settings by adjusting `num_frames`, `GGS.enable`, and others in `./cfgs/default_test.yaml`.
 
 
 ## Acknowledgement
