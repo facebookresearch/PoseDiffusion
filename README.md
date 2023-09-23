@@ -14,7 +14,8 @@ source install.sh
 
 ## Quick Start
 
-1. **Download Checkpoint**:
+<!-- 1. **Download Checkpoint**: -->
+### 1. Download Checkpoint
 
 Download the model checkpoint trained on Co3D from [Dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
 
