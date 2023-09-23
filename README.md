@@ -52,6 +52,19 @@ accelerate launch train.py --num_processes=8 --multi_gpu --num_machines=1
 
 Please notice that we use Visdom to record logs.
 
+## Testing
+
+Please specify the paths `CO3D_DIR`, `CO3D_ANNOTATION_DIR`, and `resume_ckpt` in `./cfgs/default_test.yaml`. The flag `resume_ckpt` refers to your downloaded model checkpoint.
+
+Then you can run testing over Co3D by:
+
+```bash
+python test.py
+```
+
+You can check different testing settings by adjusting `num_frames`, `GGS.enable`, and so on in `./cfgs/default_test.yaml`.
+
+
 ## Acknowledgement
 
 Thanks for the great implementation of [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch), [guided-diffusion](https://github.com/openai/guided-diffusion), [hloc](https://github.com/cvg/Hierarchical-Localization), [relpose](https://github.com/jasonyzhang/relpose).

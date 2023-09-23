@@ -158,7 +158,11 @@ def _test_one_category(model, category, cfg, num_frames, random_order, accelerat
             print(f"Skip sequence {seq_name}")
             continue
         
-        ids = np.random.choice(len(metadata), num_frames, replace=False)
+        if random_order:
+            ids = np.random.choice(len(metadata), num_frames, replace=False)
+        else:
+            raise ValueError("Please specify your own sampling strategy")
+            
         batch, image_paths = test_dataset.get_data(sequence_name=seq_name, ids=ids, return_path = True)
 
         # Use load_and_preprocess_images() here instead of using batch["image"] as
