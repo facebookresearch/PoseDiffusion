@@ -14,18 +14,11 @@ from multiprocessing import Pool
 import hydra
 import torch
 from hydra.utils import instantiate, get_original_cwd
-from accelerate import Accelerator, DistributedDataParallelKwargs, GradScalerKwargs
+from accelerate import Accelerator
 from omegaconf import DictConfig, OmegaConf
-from pytorch3d.ops import corresponding_cameras_alignment
-from pytorch3d.ops.points_alignment import iterative_closest_point, _apply_similarity_transform
 from pytorch3d.renderer.cameras import PerspectiveCameras
-from pytorch3d.structures import Pointclouds
 from pytorch3d.vis.plotly_vis import plot_scene
-from pytorch3d.implicitron.tools import model_io, vis_utils
-
-from util.load_img_folder import load_and_preprocess_images
-from util.match_extraction import extract_match
-from util.metric import camera_to_rel_deg
+from util.metric import camera_to_rel_deg, calculate_auc
 from util.train_util import (
     DynamicBatchSampler,
     VizStats,
@@ -95,10 +88,10 @@ def train_fn(cfg: DictConfig):
         except:
             model.load_state_dict(checkpoint, strict=True)
 
-        accelerator.print(f"Successfully resumed from checkpoint at epoch {start_epoch}")
+        accelerator.print(f"Successfully resumed from {cfg.test.resume_ckpt}")
 
     # metrics to record
-    stats = VizStats(("loss", "lr", "sec/it", "Racc_5", "Racc_15", "Racc_30", "Tacc_5", "Tacc_15", "Tacc_30"))
+    stats = VizStats(("loss", "lr", "sec/it", "Auc_30", "Racc_5", "Racc_15", "Racc_30", "Tacc_5", "Tacc_15", "Tacc_30"))
     num_epochs = cfg.train.epochs
 
     for epoch in range(start_epoch, num_epochs):
@@ -171,7 +164,6 @@ def _train_or_eval_fn(
     for step, batch in enumerate(dataloader):
         # data preparation
         images = batch["image"].to(accelerator.device)
-        crop_params = batch["crop_params"].to(accelerator.device)
         translation = batch["T"].to(accelerator.device)
         rotation = batch["R"].to(accelerator.device)
         fl = batch["fl"].to(accelerator.device)
@@ -219,12 +211,16 @@ def _train_or_eval_fn(
         Tacc_15 = (rel_tangle_deg < 15).float().mean()
         Tacc_30 = (rel_tangle_deg < 30).float().mean()
 
+        # also called mAA in some literature
+        Auc_30 = calculate_auc(rel_rangle_deg, rel_tangle_deg, max_threshold=30)
+
         predictions["Racc_5"] = Racc_5
         predictions["Racc_15"] = Racc_15
         predictions["Racc_30"] = Racc_30
         predictions["Tacc_5"] = Tacc_5
         predictions["Tacc_15"] = Tacc_15
         predictions["Tacc_30"] = Tacc_30
+        predictions["Auc_30"] = Auc_30
 
         if visualize:
             # an example if trying to conduct visualization by visdom

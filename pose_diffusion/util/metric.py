@@ -48,6 +48,66 @@ def camera_to_rel_deg(pred_cameras, gt_cameras, device, batch_size):
     return rel_rangle_deg, rel_tangle_deg
 
 
+def calculate_auc_np(r_error, t_error, max_threshold=30):
+    """
+    Calculate the Area Under the Curve (AUC) for the given error arrays.
+
+    :param r_error: numpy array representing R error values (Degree).
+    :param t_error: numpy array representing T error values (Degree).
+    :param max_threshold: maximum threshold value for binning the histogram.
+    :return: cumulative sum of normalized histogram of maximum error values.
+    """
+
+    # Concatenate the error arrays along a new axis
+    error_matrix = np.concatenate((r_error[:, None], t_error[:, None]), axis=1)
+
+    # Compute the maximum error value for each pair
+    max_errors = np.max(error_matrix, axis=1)
+
+    # Define histogram bins
+    bins = np.arange(max_threshold + 1)
+
+    # Calculate histogram of maximum error values
+    histogram, _ = np.histogram(max_errors, bins=bins)
+
+    # Normalize the histogram
+    num_pairs = float(len(max_errors))
+    normalized_histogram = histogram.astype(float) / num_pairs
+
+    # Compute and return the cumulative sum of the normalized histogram
+    return np.mean(np.cumsum(normalized_histogram))
+
+
+def calculate_auc(r_error, t_error, max_threshold=30):
+    """
+    Calculate the Area Under the Curve (AUC) for the given error arrays using PyTorch.
+
+    :param r_error: torch.Tensor representing R error values (Degree).
+    :param t_error: torch.Tensor representing T error values (Degree).
+    :param max_threshold: maximum threshold value for binning the histogram.
+    :return: cumulative sum of normalized histogram of maximum error values.
+    """
+
+    # Concatenate the error tensors along a new axis
+    error_matrix = torch.stack((r_error, t_error), dim=1)
+
+    # Compute the maximum error value for each pair
+    max_errors, _ = torch.max(error_matrix, dim=1)
+
+    # Define histogram bins
+    bins = torch.arange(max_threshold + 1)
+
+    # Calculate histogram of maximum error values
+    histogram = torch.histc(max_errors, bins=max_threshold + 1, min=0, max=max_threshold)
+
+    # Normalize the histogram
+    num_pairs = float(max_errors.size(0))
+    normalized_histogram = histogram / num_pairs
+
+    # Compute and return the cumulative sum of the normalized histogram
+    return torch.cumsum(normalized_histogram, dim=0).mean()
+
+
 def batched_all_pairs(B, N):
     # B, N = se3.shape[:2]
     i1_, i2_ = torch.combinations(torch.arange(N), 2, with_replacement=False).unbind(-1)

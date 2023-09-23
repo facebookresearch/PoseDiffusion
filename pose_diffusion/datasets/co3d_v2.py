@@ -49,7 +49,6 @@ class Co3dDataset(Dataset):
         CO3D_DIR=None,
         CO3D_ANNOTATION_DIR=None,
         foreground_crop=True,
-        preload_image=False,
         center_box=True,
         sort_by_filename=False,
         compute_optical=False,
@@ -68,12 +67,17 @@ class Co3dDataset(Dataset):
                 camera 1 has extrinsics [I | 0].
             mask_images (bool): If True, masks out the background of the images.
         """
-        if "all" in category:
+        if "seen" in category:
             category = TRAINING_CATEGORIES
-        if "debug" in category:
-            category = DEBUG_CATEGORIES
-
+            
+        if "unseen" in category:
+            category = TEST_CATEGORIES
+        
+        if "all" in category:
+            category = TRAINING_CATEGORIES + TEST_CATEGORIES
+        
         category = sorted(category)
+        self.category = category
 
         if split == "train":
             split_name = "train"
@@ -136,6 +140,7 @@ class Co3dDataset(Dataset):
             print(counter)
 
         self.sequence_list = list(self.rotations.keys())
+                
         self.split = split
         self.debug = debug
         self.sort_by_filename = sort_by_filename
@@ -221,7 +226,7 @@ class Co3dDataset(Dataset):
         ids = np.random.choice(len(metadata), n_per_seq, replace=False)
         return self.get_data(index=index, ids=ids)
 
-    def get_data(self, index=None, sequence_name=None, ids=(0, 1), no_images=False):
+    def get_data(self, index=None, sequence_name=None, ids=(0, 1), no_images=False, return_path = False):
         if sequence_name is None:
             sequence_name = self.sequence_list[index]
         metadata = self.rotations[sequence_name]
@@ -237,10 +242,12 @@ class Co3dDataset(Dataset):
         translations = []
         focal_lengths = []
         principal_points = []
+        image_paths = []
+        
         for anno in annos:
             filepath = anno["filepath"]
-
-            image = Image.open(osp.join(self.CO3D_DIR, filepath)).convert("RGB")
+            image_path = osp.join(self.CO3D_DIR, filepath)
+            image = Image.open(image_path).convert("RGB")
 
             if self.mask_images:
                 white_image = Image.new("RGB", image.size, (255, 255, 255))
@@ -259,7 +266,8 @@ class Co3dDataset(Dataset):
             translations.append(torch.tensor(anno["T"]))
             focal_lengths.append(torch.tensor(anno["focal_length"]))
             principal_points.append(torch.tensor(anno["principal_point"]))
-
+            image_paths.append(image_path)
+            
         crop_parameters = []
         images_transformed = []
 
@@ -361,6 +369,9 @@ class Co3dDataset(Dataset):
 
         batch["image"] = images
 
+        if return_path:
+            return batch, image_paths
+        
         return batch
 
 

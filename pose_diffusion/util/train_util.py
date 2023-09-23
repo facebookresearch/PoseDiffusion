@@ -103,7 +103,6 @@ def get_co3d_dataset(cfg):
         "min_num_images": cfg.train.min_num_images,
         "CO3D_DIR": cfg.train.CO3D_DIR,
         "CO3D_ANNOTATION_DIR": cfg.train.CO3D_ANNOTATION_DIR,
-        "preload_image": cfg.train.preload_image,
         "first_camera_transform": cfg.train.first_camera_transform,
         "compute_optical": cfg.train.compute_optical,
         "color_aug": cfg.train.color_aug,
@@ -117,6 +116,31 @@ def get_co3d_dataset(cfg):
     eval_dataset = Co3dDataset(**common_params, split="test", eval_time=True)
 
     return dataset, eval_dataset
+
+
+def get_co3d_dataset_test(cfg, category = None):
+    # Common dataset parameters
+    if category is None:
+        category = cfg.test.category
+        
+    common_params = {
+        "category": (category,),
+        "debug": False,
+        "mask_images": False,
+        "img_size": cfg.test.img_size,
+        "normalize_cameras": cfg.test.normalize_cameras,
+        "min_num_images": cfg.test.min_num_images,
+        "CO3D_DIR": cfg.test.CO3D_DIR,
+        "CO3D_ANNOTATION_DIR": cfg.test.CO3D_ANNOTATION_DIR,
+        "first_camera_transform": cfg.test.first_camera_transform,
+        "compute_optical": cfg.test.compute_optical,
+        "sort_by_filename": True,       # to ensure images are aligned with extracted matches
+    }
+
+    # Create the test dataset
+    test_dataset = Co3dDataset(**common_params, split="test", eval_time=True)
+
+    return test_dataset
 
 
 def set_seed_and_print(seed):

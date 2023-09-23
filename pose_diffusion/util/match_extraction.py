@@ -24,15 +24,21 @@ from hloc.utils.database import COLMAPDatabase, image_ids_to_pair_id, pair_id_to
 from hloc.reconstruction import create_empty_db, import_images, get_image_ids
 
 
-def extract_match(image_folder_path: str, image_info: Dict):
+def extract_match(image_paths = None, image_folder_path = None, image_info = None):
     # Now only supports SPSG
+        
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_mapping = os.path.join(tmpdir, "mapping")
         os.makedirs(tmp_mapping)
 
-        for filename in os.listdir(image_folder_path):
-            if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")):
-                shutil.copy(os.path.join(image_folder_path, filename), os.path.join(tmp_mapping, filename))
+        if image_paths is None:
+            for filename in os.listdir(image_folder_path):
+                if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")):
+                    shutil.copy(os.path.join(image_folder_path, filename), os.path.join(tmp_mapping, filename))
+        else:
+            for filename in image_paths: 
+                if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")):
+                    shutil.copy(filename, os.path.join(tmp_mapping, os.path.basename(filename)))
         matches, keypoints = run_hloc(tmpdir)
 
     # From the format of colmap to PyTorch3D

@@ -2,43 +2,39 @@ seed: 0
 
 
 
-train:
+test:
     # Please Specify Your Own Path
     CO3D_DIR: "/datasets01/co3dv2/080422/"
     CO3D_ANNOTATION_DIR: "/fsx-repligen/jianyuan/datasets/co3d_relpose/"
+    resume_ckpt: "/data/home/jianyuan/src/PoseDiffusion/pose_diffusion/tmp/co3d_model_Apr16.pth"
     
+    random_order: True
+    num_frames: 10
+
+    ##########################
 
     img_size: 224
     category: seen
-    restart_num: 50
-    lr: 0.0001
-    resume_ckpt: False
-    epochs: 100
-    ckpt_interval: 5
-    num_workers: 8
 
-    eval_interval: 5
-
-    print_interval: 10
-
-    len_train: 16384
-    len_eval: 256
-
-    max_images: 512
     normalize_cameras: True
     persistent_workers: True
 
-    pin_memory: False
-    clip_grad: 1.0
     preload_image: False
     cudnnbenchmark: False
     first_camera_transform: True
     min_num_images: 50
-    images_per_seq: [3, 51]
     compute_optical: True
-    color_aug: True
-    erase_aug: False
-    batch_repeat: 90
+
+GGS:
+    enable: True
+    start_step: 10
+    learning_rate: 0.01
+    iter_num: 100
+    sampson_max: 10
+    min_matches: 10
+    alpha: 0.0001
+
+
 
 debug: False
 
