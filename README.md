@@ -14,12 +14,12 @@ source install.sh
 
 ## Quick Start
 
-<!-- 1. **Download Checkpoint**: -->
 ### 1. Download Checkpoint
 
 Download the model checkpoint trained on Co3D from [Dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
 
-2. **Run the Demo**:
+
+### 2. Run the Demo
 
 ```.bash
 python demo.py image_folder="samples/apple" ckpt="/PATH/TO/DOWNLOADED/CKPT"
@@ -36,15 +36,15 @@ We use [Visdom](https://github.com/fossasia/visdom) by default for visualization
 
 ## Training
 
-1. **Preprocess Annotations**:
+### 1. Preprocess Annotations
 
 Start by following the instructions [here](https://github.com/amyxlase/relpose-plus-plus#pre-processing-co3d) to preprocess the annotations of the Co3D V2 dataset. This will significantly reduce data processing time during training.
 
-2. **Specify Paths**:
+### 2. Specify Paths
 
 Next, specify the paths for `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/default_train.yaml`. `CO3D_DIR` should be set to the path where your downloaded Co3D dataset is located, while `CO3D_ANNOTATION_DIR` should point to the location of the annotation files generated after completing the preprocessing in step 1.
 
-3. **Start Training**:
+### 3. Start Training
 
 - For 1-GPU Training:
   ```bash
@@ -60,11 +60,11 @@ All configurations are specified inside `./cfgs/default_train.yaml`. Please noti
 
 ## Testing
 
-1. **Specify Paths**:
+### 1. Specify Paths
 
 Please specify the paths `CO3D_DIR`, `CO3D_ANNOTATION_DIR`, and `resume_ckpt` in `./cfgs/default_test.yaml`. The flag `resume_ckpt` refers to your downloaded model checkpoint.
 
-2. **Run Testing**:
+### 2. Run Testing
 
 ```bash
 python test.py
