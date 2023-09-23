@@ -26,15 +26,10 @@ python demo.py image_folder="samples/apple" ckpt="/PATH/TO/DOWNLOADED/CKPT"
 
 You can experiment with your own data by specifying a different `image_folder`.
 
-3. **Speed**:
 
 On a Quadro GP100 GPU, the inference time for a 20-frame sequence is approximately 0.8 seconds without GGS and around 80 seconds with GGS (including 20 seconds for matching extraction).
 
-4. **Configuration**:
-
 You can choose to enable or disable GGS (or other settings) in `./cfgs/default.yaml`.
-
-5. **Visualization**:
 
 We use [Visdom](https://github.com/fossasia/visdom) by default for visualization. Ensure your Visdom settings are correctly configured to visualize the results accurately. However, Visdom is not necessary for running the model.
 
