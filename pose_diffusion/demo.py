@@ -76,7 +76,7 @@ def demo(cfg: DictConfig) -> None:
     if cfg.GGS.enable:
         # Optional TODO: remove the keypoints outside the cropped region?
 
-        kp1, kp2, i12 = extract_match(folder_path, image_info)
+        kp1, kp2, i12 = extract_match(image_folder_path=folder_path, image_info=image_info)
 
         if kp1 is not None:
             keys = ["kp1", "kp2", "i12", "img_shape"]

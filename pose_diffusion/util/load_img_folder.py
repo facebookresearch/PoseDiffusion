@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from typing import Any, ClassVar, Dict, Iterable, List, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
 
 
-def load_and_preprocess_images(folder_path  = None, image_paths = None, image_size: int = 224, mode: str = "bilinear") -> torch.Tensor:
+def load_and_preprocess_images(folder_path  = None, image_size: int = 224, image_paths = None, mode: str = "bilinear") -> torch.Tensor:
     if image_paths is None:
         image_paths = [
             os.path.join(folder_path, file)
