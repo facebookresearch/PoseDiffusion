@@ -88,7 +88,7 @@ def train_fn(cfg: DictConfig):
         except:
             model.load_state_dict(checkpoint, strict=True)
 
-        accelerator.print(f"Successfully resumed from {cfg.test.resume_ckpt}")
+        accelerator.print(f"Successfully resumed from {cfg.train.resume_ckpt}")
 
     # metrics to record
     stats = VizStats(("loss", "lr", "sec/it", "Auc_30", "Racc_5", "Racc_15", "Racc_30", "Tacc_5", "Tacc_15", "Tacc_30"))
