@@ -51,9 +51,9 @@ def train_fn(cfg: DictConfig):
             from visdom import Visdom
 
             viz = Visdom()
-            cams_show = {"ours_pred": pred_cameras, "ours_pred_aligned": pred_cameras_aligned, "gt_cameras": gt_cameras}
-            fig = plot_scene({f"{folder_path}": cams_show})
-            viz.plotlyplot(fig, env="visual", win="cams")
+            # cams_show = {"ours_pred": pred_cameras, "ours_pred_aligned": pred_cameras_aligned, "gt_cameras": gt_cameras}
+            # fig = plot_scene({f"{folder_path}": cams_show})
+            # viz.plotlyplot(fig, env="visual", win="cams")
         except:
             print("Warning: please check your visdom connection for visualization")
 
