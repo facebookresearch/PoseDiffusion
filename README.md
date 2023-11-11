@@ -53,7 +53,7 @@ Next, specify the paths for `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/defa
 
 - For multi-GPU training, launch the training script using [accelerate](https://huggingface.co/docs/accelerate/basic_tutorials/launch), e.g., training on 8 GPUs (processes) in 1 node (machines):
   ```bash
-  accelerate launch train.py --num_processes=8 --multi_gpu --num_machines=1
+  accelerate launch --num_processes=8 --multi_gpu --num_machines=1 train.py 
   ```
   
 All configurations are specified inside `./cfgs/default_train.yaml`. Please notice that we use Visdom to record logs.
