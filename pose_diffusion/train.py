@@ -137,13 +137,13 @@ def train_fn(cfg: DictConfig):
             accelerator.wait_for_everyone()
             ckpt_path = os.path.join(cfg.exp_dir, f"ckpt_{epoch:06}")
             accelerator.print(f"----------Saving the ckpt at epoch {epoch} to {ckpt_path}----------")
-            accelerator.save_state(output_dir=ckpt_path)
+            accelerator.save_state(output_dir=ckpt_path, safe_serialization=False)
 
             if accelerator.is_main_process:
                 stats.save(cfg.exp_dir + "stats")
 
     accelerator.wait_for_everyone()
-    accelerator.save_state(output_dir=os.path.join(cfg.exp_dir, f"ckpt_{epoch:06}"))
+    accelerator.save_state(output_dir=os.path.join(cfg.exp_dir, f"ckpt_{epoch:06}"), safe_serialization=False)
 
     return True
 
