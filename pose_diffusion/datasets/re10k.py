@@ -345,7 +345,7 @@ class Re10KDataset(Dataset):
 
         if self.normalize_cameras:
             ################################################################################################################            
-            norm_cameras, points = normalize_cameras(
+            norm_cameras = normalize_cameras(
                 cameras,
                 compute_optical=self.compute_optical, 
                 first_camera=self.first_camera_transform, 
