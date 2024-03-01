@@ -9,6 +9,7 @@ Adapted from code originally written by David Novotny.
 """
 import torch
 from pytorch3d.transforms import Rotate, Translate
+import math
 
 
 def intersect_skew_line_groups(p, r, mask):
