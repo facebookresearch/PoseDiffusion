@@ -71,7 +71,7 @@ def compute_optical_axis_intersection(cameras):
     return p_intersect, dist, p_line_intersect, pp2, r
 
 
-def normalize_cameras(cameras, compute_optical=True, first_camera=True, scale=1.0):
+def normalize_cameras(cameras, compute_optical=True, first_camera=True, scale=1.0, normalize_T = False):
     """
     Normalizes cameras such that the optical axes point to the origin and the average
     distance to the origin is 1.
@@ -106,8 +106,26 @@ def normalize_cameras(cameras, compute_optical=True, first_camera=True, scale=1.
 
     if first_camera:
         new_cameras = first_camera_transform(new_cameras)
+    
+    if normalize_T:
+        new_cameras = normalize_Trans(new_cameras)
 
     return new_cameras
+
+
+
+def normalize_Trans(new_cameras):
+    
+    t_gt = new_cameras.T.clone()
+    t_gt = t_gt[1:,:]
+    t_gt_scale = torch.norm(t_gt, dim=(0, 1))
+    t_gt_scale = t_gt_scale / math.sqrt(len(t_gt))
+    t_gt_scale = t_gt_scale / 2
+    t_gt_scale = t_gt_scale.clamp(min=0.01, max = 100)
+    new_cameras.T = new_cameras.T / t_gt_scale
+    
+    return new_cameras
+
 
 
 def first_camera_transform(cameras, rotation_only=False):
