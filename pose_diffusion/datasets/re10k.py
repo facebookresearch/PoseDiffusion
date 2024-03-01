@@ -172,7 +172,9 @@ class Re10KDataset(Dataset):
                             }
 
                         filtered_data.append(data)
-
+                    except:
+                        print("this image is missing")
+                        
                 if len(filtered_data) > self.min_num_images:
                     self.wholedata[scene_name] = filtered_data
                 else:
