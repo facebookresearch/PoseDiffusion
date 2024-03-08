@@ -1,6 +1,6 @@
 seed: 0
 exp_name: exp001_train
-
+exp_dir: "name_your_own"
 
 train:
     # Please Specify Your Own Path
