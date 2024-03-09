@@ -56,7 +56,9 @@ Next, specify the paths for `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/defa
   accelerate launch --num_processes=8 --multi_gpu --num_machines=1 train.py 
   ```
   
-All configurations are specified inside `./cfgs/default_train.yaml`. Please notice that we use Visdom to record logs.
+All configurations are specified inside `./cfgs/default_train.yaml`. Please notice that we use Visdom to record logs. 
+
+For each iteration, the training should take around 1~3 seconds depending on difference devices. You can check it by looking at the `sec/it` of the log. Please submit an issue if you observed a higher number.
 
 ## Testing
 
