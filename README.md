@@ -58,7 +58,9 @@ Next, specify the paths for `CO3D_DIR` and `CO3D_ANNOTATION_DIR` in `./cfgs/defa
   
 All configurations are specified inside `./cfgs/default_train.yaml`. Please notice that we use Visdom to record logs. 
 
-For each iteration, the training should take around 1~3 seconds depending on difference devices. You can check it by looking at the `sec/it` of the log. Please submit an issue if you observed a higher number (this should be related to the data loading of `accelerate`, a simple solution is to use pytorch's own distributed training). The whole training should take around 2-3 days on 8 A100 GPUs.
+For each iteration, the training should take around 1~3 seconds depending on difference devices. You can check it by looking at the `sec/it` of the log. The whole training should take around 2-3 days on 8 A100 GPUs.
+
+**NOTE**: In some clusters we found the publicly released training code can be super slow when using multiple GPUs. This looks because that `accelerate` does not work well under some settings and hence the data loading is very slow (if not hangs out). The simplest solution is to remove `accelerate (accelerator)` from the code, and use pytorch's own distributed trainer or [pytorch-lighting](https://github.com/Lightning-AI/pytorch-lightning) to launch the training. This problem does not affect single GPU training. Please submit an issue if you observed a higher number or report your case [here](https://github.com/facebookresearch/PoseDiffusion/issues/33) (this should be related to the data loading of `accelerate`, a simple solution is to use pytorch's own distributed training). 
 
 
 ## Testing
