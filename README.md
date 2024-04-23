@@ -5,6 +5,13 @@
 <p dir="auto">[<a href="https://arxiv.org/pdf/2306.15667.pdf" rel="nofollow">Paper</a>]
 [<a href="https://posediffusion.github.io/" rel="nofollow">Project Page</a>]</p>
 
+
+**Updates:**
+
+- [Apr 24, 2024] You may also have an interest in [VGGSfM](https://github.com/facebookresearch/vggsfm), where a model similar to PoseDiffusion is used as the camera predictor. It also supports to optimize camera parameters through bundle adjustment.  
+
+
+
 ## Installation
 We provide a simple installation script that, by default, sets up a conda environment with Python 3.9, PyTorch 1.13, and CUDA 11.6.
 
