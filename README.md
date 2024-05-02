@@ -23,7 +23,10 @@ source install.sh
 
 ### 1. Download Checkpoint
 
-Download the model checkpoint trained on Co3D from [Dropbox](https://www.dropbox.com/s/tqzrv9i0umdv17d/co3d_model_Apr16.pth?dl=0). The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
+You can download the model checkpoint trained on [Co3D](https://drive.google.com/file/d/14Waj4RCrdezx_jG9Am9WlvLfvhyuCQ3k/view?usp=sharing) or [RealEstate10K](https://drive.google.com/file/d/1MhllRDsfV6LGnNLzejNlqVRDFsDEd3W6/view?usp=sharing). Please note that the checkpoint for RealEstate10K was trained on an image size of 336 and has not been fully tested. The predicted camera poses and focal lengths are defined in [NDC coordinate](https://pytorch3d.org/docs/cameras).
+
+
+
 
 
 ### 2. Run the Demo
