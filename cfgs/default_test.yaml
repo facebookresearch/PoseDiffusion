@@ -1,0 +1,68 @@
+seed: 0
+exp_name: exp001_test
+
+
+
+
+test:
+    # Please Specify Your Own Path
+    CO3D_DIR: "/datasets01/co3dv2/080422/"
+    CO3D_ANNOTATION_DIR: "/fsx-repligen/jianyuan/datasets/co3d_relpose/"
+    resume_ckpt: "/data/home/jianyuan/src/PoseDiffusion/pose_diffusion/tmp/co3d_model_Apr16.pth"
+    
+    random_order: True
+    num_frames: 10
+
+    ##########################
+
+    img_size: 224
+    category: seen
+
+    normalize_cameras: True
+    persistent_workers: True
+
+    preload_image: False
+    cudnnbenchmark: False
+    first_camera_transform: True
+    min_num_images: 50
+    compute_optical: True
+
+GGS:
+    enable: True
+    start_step: 10
+    learning_rate: 0.01
+    iter_num: 100
+    sampson_max: 10
+    min_matches: 10
+    alpha: 0.0001
+
+
+
+debug: False
+
+
+MODEL:
+    _target_: models.PoseDiffusionModel
+
+    pose_encoding_type: absT_quaR_logFL
+
+    IMAGE_FEATURE_EXTRACTOR: 
+        _target_: models.MultiScaleImageFeatureExtractor
+        modelname: "dino_vits16"
+        freeze: False
+
+    DENOISER: 
+        _target_: models.Denoiser
+        TRANSFORMER:
+            _target_:               models.TransformerEncoderWrapper
+            d_model:                512
+            nhead:                  4
+            dim_feedforward:        1024
+            num_encoder_layers:     8
+            dropout:                0.1
+            batch_first:            True
+            norm_first:             True
+
+    DIFFUSER:
+        _target_: models.GaussianDiffusion
+        beta_schedule: custom

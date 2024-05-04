@@ -34,7 +34,7 @@ from visdom import Visdom
 
 
 @hydra.main(config_path="../cfgs/", config_name="default")
-def main(cfg: DictConfig) -> None:
+def demo(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print("Model Config:")
     print(OmegaConf.to_yaml(cfg))
@@ -76,7 +76,7 @@ def main(cfg: DictConfig) -> None:
     if cfg.GGS.enable:
         # Optional TODO: remove the keypoints outside the cropped region?
 
-        kp1, kp2, i12 = extract_match(folder_path, image_info)
+        kp1, kp2, i12 = extract_match(image_folder_path=folder_path, image_info=image_info)
 
         if kp1 is not None:
             keys = ["kp1", "kp2", "i12", "img_shape"]
@@ -86,17 +86,15 @@ def main(cfg: DictConfig) -> None:
             cfg.GGS.pose_encoding_type = cfg.MODEL.pose_encoding_type
             GGS_cfg = OmegaConf.to_container(cfg.GGS)
 
-            cond_fn = partial(
-                geometry_guided_sampling,
-                matches_dict=matches_dict,
-                GGS_cfg=GGS_cfg,
-            )
+            cond_fn = partial(geometry_guided_sampling, matches_dict=matches_dict, GGS_cfg=GGS_cfg)
             print("[92m=====> Sampling with GGS <=====[0m")
         else:
             cond_fn = None
     else:
         cond_fn = None
         print("[92m=====> Sampling without GGS <=====[0m")
+
+    images = images.unsqueeze(0)
 
     # Forward
     with torch.no_grad():
@@ -107,51 +105,41 @@ def main(cfg: DictConfig) -> None:
         # The poses and focal length are defined as
         # NDC coordinate system in
         # https://github.com/facebookresearch/pytorch3d/blob/main/docs/notes/cameras.md
-        pred_cameras = model(
-            image=images, cond_fn=cond_fn, cond_start_step=cfg.GGS.start_step
-        )
+        predictions = model(image=images, cond_fn=cond_fn, cond_start_step=cfg.GGS.start_step, training=False)
+
+    pred_cameras = predictions["pred_cameras"]
 
     # Stop the timer and calculate elapsed time
     end_time = time.time()
     elapsed_time = end_time - start_time
     print("Time taken: {:.4f} seconds".format(elapsed_time))
 
+    # Compute metrics if gt is available
+
     # Load gt poses
-    gt_cameras_dict = np.load(os.path.join(folder_path, "gt_cameras.npz"))
-    gt_cameras = PerspectiveCameras(
-        focal_length=gt_cameras_dict["gtFL"],
-        R=gt_cameras_dict["gtR"],
-        T=gt_cameras_dict["gtT"],
-        device=device,
-    )
+    if os.path.exists(os.path.join(folder_path, "gt_cameras.npz")):
+        gt_cameras_dict = np.load(os.path.join(folder_path, "gt_cameras.npz"))
+        gt_cameras = PerspectiveCameras(
+            focal_length=gt_cameras_dict["gtFL"], R=gt_cameras_dict["gtR"], T=gt_cameras_dict["gtT"], device=device
+        )
 
-    # 7dof alignment, using Umeyama's algorithm
-    pred_cameras_aligned = corresponding_cameras_alignment(
-        cameras_src=pred_cameras,
-        cameras_tgt=gt_cameras,
-        estimate_scale=True,
-        mode="extrinsics",
-        eps=1e-9,
-    )
+        # 7dof alignment, using Umeyama's algorithm
+        pred_cameras_aligned = corresponding_cameras_alignment(
+            cameras_src=pred_cameras, cameras_tgt=gt_cameras, estimate_scale=True, mode="extrinsics", eps=1e-9
+        )
 
-    # Compute the absolute rotation error
-    ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
+        # Compute the absolute rotation error
+        ARE = compute_ARE(pred_cameras_aligned.R, gt_cameras.R).mean()
+        print(f"For {folder_path}: the absolute rotation error is {ARE:.6f} degrees.")
+    else:
+        print(f"No GT provided. No evaluation conducted.")
 
-    print(
-        f"For {folder_path}: the absolute rotation error is {ARE:.6f} degrees."
-    )
-    print(f"Without GGS, it should be smaller than 3.20 degrees.")
-    print(f"With GGS, it should be smaller than 2.16 degrees.")
 
-    # For visualization
+    # Visualization
     try:
         viz = Visdom()
 
-        cams_show = {
-            "ours_pred": pred_cameras,
-            "ours_pred_aligned": pred_cameras_aligned,
-            "gt_cameras": gt_cameras,
-        }
+        cams_show = {"ours_pred": pred_cameras, "ours_pred_aligned": pred_cameras_aligned, "gt_cameras": gt_cameras}
 
         fig = plot_scene({f"{folder_path}": cams_show})
 
@@ -160,5 +148,6 @@ def main(cfg: DictConfig) -> None:
         print("Please check your visdom connection")
 
 
+
 if __name__ == "__main__":
-    main()
+    demo()

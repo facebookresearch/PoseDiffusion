@@ -12,12 +12,7 @@ from pathlib import Path
 import numpy as np
 import pycolmap
 from typing import Optional, List, Dict, Any
-from hloc import (
-    extract_features,
-    logger,
-    match_features,
-    pairs_from_exhaustive,
-)
+from hloc import extract_features, logger, match_features, pairs_from_exhaustive
 from hloc.triangulation import (
     import_features,
     import_matches,
@@ -25,27 +20,25 @@ from hloc.triangulation import (
     parse_option_args,
     OutputCapture,
 )
-from hloc.utils.database import (
-    COLMAPDatabase,
-    image_ids_to_pair_id,
-    pair_id_to_image_ids,
-)
+from hloc.utils.database import COLMAPDatabase, image_ids_to_pair_id, pair_id_to_image_ids
 from hloc.reconstruction import create_empty_db, import_images, get_image_ids
 
 
-def extract_match(image_folder_path: str, image_info: Dict):
+def extract_match(image_paths = None, image_folder_path = None, image_info = None):
     # Now only supports SPSG
+        
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_mapping = os.path.join(tmpdir, "mapping")
         os.makedirs(tmp_mapping)
-        for filename in os.listdir(image_folder_path):
-            if filename.lower().endswith(
-                (".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")
-            ):
-                shutil.copy(
-                    os.path.join(image_folder_path, filename),
-                    os.path.join(tmp_mapping, filename),
-                )
+
+        if image_paths is None:
+            for filename in os.listdir(image_folder_path):
+                if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")):
+                    shutil.copy(os.path.join(image_folder_path, filename), os.path.join(tmp_mapping, filename))
+        else:
+            for filename in image_paths: 
+                if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff")):
+                    shutil.copy(filename, os.path.join(tmp_mapping, os.path.basename(filename)))
         matches, keypoints = run_hloc(tmpdir)
 
     # From the format of colmap to PyTorch3D
@@ -64,10 +57,7 @@ def colmap_keypoint_to_pytorch3d(matches, keypoints, image_info):
 
         # go to the coordiante after cropping
         # use idx - 1 here because the COLMAP format starts from 1 instead of 0
-        cur_keypoint = cur_keypoint - [
-            bbox_xyxy[idx - 1][0],
-            bbox_xyxy[idx - 1][1],
-        ]
+        cur_keypoint = cur_keypoint - [bbox_xyxy[idx - 1][0], bbox_xyxy[idx - 1][1]]
         cur_keypoint = cur_keypoint * scale[idx - 1]
         keypoints[idx] = cur_keypoint
 
@@ -98,23 +88,14 @@ def run_hloc(output_dir: str):
     features = outputs / "features.h5"
     matches = outputs / "matches.h5"
 
-    feature_conf = extract_features.confs[
-        "superpoint_inloc"
-    ]  # or superpoint_max
+    feature_conf = extract_features.confs["superpoint_inloc"]  # or superpoint_max
     matcher_conf = match_features.confs["superglue"]
 
-    references = [
-        p.relative_to(images).as_posix()
-        for p in (images / "mapping/").iterdir()
-    ]
+    references = [p.relative_to(images).as_posix() for p in (images / "mapping/").iterdir()]
 
-    extract_features.main(
-        feature_conf, images, image_list=references, feature_path=features
-    )
+    extract_features.main(feature_conf, images, image_list=references, feature_path=features)
     pairs_from_exhaustive.main(sfm_pairs, image_list=references)
-    match_features.main(
-        matcher_conf, sfm_pairs, features=features, matches=matches
-    )
+    match_features.main(matcher_conf, sfm_pairs, features=features, matches=matches)
 
     matches, keypoints = compute_matches_and_keypoints(
         sfm_dir, images, sfm_pairs, features, matches, image_list=references
@@ -151,10 +132,7 @@ def compute_matches_and_keypoints(
     db = COLMAPDatabase.connect(database)
 
     matches = dict(
-        (
-            pair_id_to_image_ids(pair_id),
-            _blob_to_array_safe(data, np.uint32, (-1, 2)),
-        )
+        (pair_id_to_image_ids(pair_id), _blob_to_array_safe(data, np.uint32, (-1, 2)))
         for pair_id, data in db.execute("SELECT pair_id, data FROM matches")
     )
 
