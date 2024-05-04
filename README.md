@@ -10,7 +10,6 @@
 
 - [Apr 24, 2024] You may also have an interest in [VGGSfM](https://github.com/facebookresearch/vggsfm), where a model similar to PoseDiffusion is used as the camera predictor. It also supports to optimize camera parameters through bundle adjustment.  
 
-
 - [Apr 24, 2024] Updated the checkpoint for RealEstate10K dataset.
 
 
@@ -41,15 +40,7 @@ python demo.py image_folder="samples/apple" ckpt="/PATH/TO/DOWNLOADED/CKPT"
 You can experiment with your own data by specifying a different `image_folder`.
 
 
-<<<<<<< HEAD
-## Training
-
-The code for training has been shared in the dev branch as a preliminary version. Please note that this code has been refactored and is undergoing testing.
-
-## Changelog
-=======
 On a Quadro GP100 GPU, the inference time for a 20-frame sequence is approximately 0.8 seconds without GGS and around 80 seconds with GGS (including 20 seconds for matching extraction).
->>>>>>> 4b3767a6c3a6d62026fbef2de9b07b03509e4c0e
 
 You can choose to enable or disable GGS (or other settings) in `./cfgs/default.yaml`.
 
@@ -106,4 +97,3 @@ Thanks for the great implementation of [denoising-diffusion-pytorch](https://git
 
 ## License
 See the [LICENSE](./LICENSE) file for details about the license under which this code is made available.
-
