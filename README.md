@@ -8,6 +8,8 @@
 
 **Updates:**
 
+- [Aug 6, 2024] To access the raw data for Figures 5, 7, and 10, please download our submission from arXiv. You can do this by clicking the [Download source] button at https://arxiv.org/format/2306.15667. The submission includes the following files: plots_co3dv2.tex, plots_re10k.tex, and plots_co3dv2_suppl.tex. These files use data from csvs.tex and csvs_suppl.tex, which are also included in the LaTeX submission source, to generate the figures.
+
 - [Apr 24, 2024] You may also have an interest in [VGGSfM](https://github.com/facebookresearch/vggsfm), where a model similar to PoseDiffusion is used as the camera predictor. It also supports to optimize camera parameters through bundle adjustment.  
 
 - [Apr 24, 2024] Updated the checkpoint for RealEstate10K dataset.
